@@ -63,7 +63,7 @@
 | Phase 6 开始前 | `frontend-patterns.md` + `deployment-patterns.md` | frontend-developer 任务指令头部 |
 | Phase 7 开始前 | `security-patterns.md` | security-engineer 任务指令头部 |
 
-**写入时机**：Phase 11 完成后（reality-checker 判决 READY），orchestrator 扫描本项目的 `BACKEND_STATUS.md`、QA 失败记录、重试次数，提炼新模式追加到对应文件。
+**写入时机**：Phase 11 完成后，且 reality-checker 判决为 READY 时，orchestrator 扫描本项目的 `BACKEND_STATUS.md`、QA 失败记录、重试次数，提炼新模式追加到对应文件。若项目中途放弃或 reality-checker 未判决 READY，不写入。
 
 **注入格式**：
 
@@ -75,7 +75,7 @@
 [正式任务指令开始]
 ```
 
-**裁剪规则**：只注入当前技术栈相关条目；知识库超过 50 条时，取出现频次最高的 5 条 + 最近 15 条。
+**裁剪规则**：orchestrator 读取项目 `CLAUDE.md` 中"技术栈"字段，与 patterns 文件中每条记录的 `技术栈:` 标签做字符串匹配，只注入匹配的条目。知识库超过 50 条时，取出现频次最高的 5 条 + 最近 15 条。
 
 ---
 
