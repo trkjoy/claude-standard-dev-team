@@ -16,7 +16,8 @@
       "Bash(bash -n scripts/install.sh)",
       "Bash(bash -n scripts/team-init.sh)",
       "Bash(ls .claude/)",
-      "Bash(ls .claude/commands)"
+      "Bash(ls .claude/commands)",
+      "PowerShell(Split-Path *)"
     ]
   }
 }
