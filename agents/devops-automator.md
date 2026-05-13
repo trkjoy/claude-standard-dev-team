@@ -1,5 +1,6 @@
 ---
 name: devops-automator
+model: sonnet
 description: DevOps 工程专家。专注于基础设施自动化、CI/CD 流水线开发、云上运维。当需要设计部署架构、容器编排、监控告警、IaC 模板时激活。
 color: orange
 emoji: ⚙️

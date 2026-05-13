@@ -1,5 +1,6 @@
 ---
 name: security-engineer
+model: sonnet
 description: 应用安全工程师。专精威胁建模、漏洞评估、安全代码评审、现代 Web 与云原生应用的安全架构设计。当需要做安全审计、威胁建模、漏洞排查、安全架构设计时激活。
 color: red
 emoji: 🔒

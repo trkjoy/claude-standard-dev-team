@@ -47,6 +47,46 @@ model: opus
 
 ---
 
+# 用户级团队运行状态
+
+每次进入标准开发流程时，先读取项目级状态目录：
+
+```
+.claude/team-state/
+  STATE.md
+  RETRY_LOG.md
+  DECISIONS.md
+  LEARNINGS.md
+```
+
+## 状态恢复规则
+
+1. 若 `.claude/team-state/STATE.md` 不存在：从 Phase 0 / Phase 1 开始，并创建状态目录。
+2. 若 `STATE.md` 存在且 `Current Phase` 不是 `Complete`：读取 `Next Action`，从该动作继续。
+3. 若 `Last Result` 为 `WAITING_USER_CONFIRMATION`：展示 `DECISIONS.md` 中相关摘要，等待用户输入"继续"。
+4. 若 `Retry Count` 大于等于 3：先展示 `RETRY_LOG.md` 中该任务的卡点报告，不自动继续。
+5. 若状态文件字段缺失：读取 docs 和 project-tasks 推断阶段，并向用户确认恢复点。
+
+## 状态写入规则
+
+每个 Phase 开始时更新：
+
+```markdown
+# Team State
+
+- Current Phase: Phase N
+- Current Task: 当前任务 ID 或 None
+- Last Agent: 上一个被调用的 agent 或 None
+- Last Result: RUNNING
+- Retry Count: 当前任务重试次数
+- Next Action: 当前 Phase 的下一步动作
+- Updated At: 当前日期
+```
+
+每个 Phase 完成时更新 `Last Result` 和 `Next Action`。Phase 1 / Phase 2 的人工确认点必须写入 `.claude/team-state/DECISIONS.md`。
+
+---
+
 # 完整执行流程
 
 ---
@@ -126,8 +166,10 @@ model: opus
 ## ► Phase 0：初始化目录
 
 ```bash
-mkdir -p docs project-tasks
+mkdir -p docs project-tasks .claude/team-state
 ```
+
+若 `.claude/team-state/STATE.md` 不存在，按模板创建 `STATE.md`、`RETRY_LOG.md`、`DECISIONS.md`、`LEARNINGS.md`，并将 `Next Action` 设置为 `Run Phase 1 requirement analysis`。
 
 创建以下契约文件占位：
 ```
@@ -283,6 +325,25 @@ project-tasks/
 
 ---
 
+## ► Phase 4.9：后端知识库注入准备
+
+在启动后端开发循环前执行：
+
+```
+STEP 0 - 读取用户级团队记忆：
+  1. 读取项目根目录 CLAUDE.md 中的"技术栈:"字段，得到 PROJECT_TECH_STACK。
+  2. 若 ~/.claude/team-memory/patterns/backend-patterns.md 存在：
+       读取文件，筛选"技术栈:"与 PROJECT_TECH_STACK 任意关键词匹配的条目。
+       取出现次数最高前 5 条 + 最近 10 条，去重后最多 15 条。
+       生成 BACKEND_MEMORY_HINT。
+  3. 若 ~/.claude/team-memory/patterns/contract-patterns.md 存在：
+       按相同规则生成 CONTRACT_MEMORY_HINT。
+  4. 合并 PHASE5_MEMORY_HINT = BACKEND_MEMORY_HINT + CONTRACT_MEMORY_HINT。
+  5. 若无匹配条目，PHASE5_MEMORY_HINT 为空，不阻塞 Phase 5。
+```
+
+---
+
 ## ► Phase 5：后端实现（含任务级 Dev-QA Loop）
 
 **逐任务执行以下循环：**
@@ -292,12 +353,14 @@ FOR 每个 project-tasks/backend-tasklist.md 中的 [ ] 任务：
 
   STEP 1 - 调用 backend-architect 实现该任务：
     输入：
+      - 若 PHASE5_MEMORY_HINT 非空，将其作为任务指令的第一段发送给 backend-architect
       - 读取 docs/API_CONTRACT.md（必须第一步）
       - 读取 docs/DB_SCHEMA.md
       - 读取当前任务描述
     要求：
       - 严格按契约实现，路径/方法/字段名不得偏差
       - 若契约有歧义，写入 docs/BACKEND_STATUS.md 的 ISSUES 章节
+      - Phase 开始、PASS、FAIL、重试前后都更新 .claude/team-state/STATE.md
     产出：该接口的实现代码
 
   STEP 2 - 调用 testing-evidence-collector 验证：
@@ -310,14 +373,56 @@ FOR 每个 project-tasks/backend-tasklist.md 中的 [ ] 任务：
       - 错误处理是否覆盖契约中定义的状态码
     产出：PASS 或 FAIL + 具体原因
 
-  STEP 3 - 决策：
-    PASS → 将任务标记为 [x]，进入下一任务
-    FAIL（重试 < 3）→ 将 QA 反馈传给 backend-architect，重新实现
-    FAIL（重试 >= 3）→ 暂停，向用户报告卡点，等待介入
+  STEP 3 - 决策（三级智能重试）：
+    记录当前任务重试次数 RETRY_COUNT，初始值为 0。
+
+    PASS →
+      - 将任务标记为 [x]
+      - 将 RETRY_COUNT 重置为 0
+      - 更新 .claude/team-state/STATE.md：Last Result = PASS，Next Action = Next backend task
+      - 进入下一任务
+
+    FAIL 且 RETRY_COUNT = 0（第1次重试）→
+      - RETRY_COUNT = 1
+      - 将失败原因追加到 .claude/team-state/RETRY_LOG.md
+      - 查 ~/.claude/team-memory/patterns/backend-patterns.md 和 contract-patterns.md
+      - 若有错误关键词匹配条目，将该条目的"解决方案"字段加入重试指令头部
+      - 打回 backend-architect，附 QA 反馈和记忆提示
+
+    FAIL 且 RETRY_COUNT = 1（第2次重试）→
+      - RETRY_COUNT = 2
+      - 将失败原因追加到 .claude/team-state/RETRY_LOG.md
+      - 按 QA 失败关键词分流：
+        * 包含"字段缺失""字段名""字段不符""契约" → 调 software-architect 复查 API_CONTRACT，再把澄清结果打回 backend-architect
+        * 包含"404""连接失败""服务未启动""Connection Refused" → 调 devops-automator 检查启动脚本和端口，再把修复建议打回 backend-architect
+        * 包含"鉴权""权限""token""JWT" → 调 security-engineer 复查安全约束，再把修复建议打回 backend-architect
+        * 其他 → 打回 backend-architect，附完整 QA 反馈
+
+    FAIL 且 RETRY_COUNT >= 2（第3次失败）→
+      - 更新 .claude/team-state/STATE.md：Last Result = BLOCKED，Retry Count = 3
+      - 生成卡点报告，包含任务 ID、3 次失败原因、已尝试修复思路、建议人工介入点
+      - 暂停，等待用户输入"继续"或提供修复思路
 
 ALL 任务 PASS 后：
   检查 BACKEND_STATUS.md 的 ISSUES 章节
   若有未解决问题 → 打回 software-architect 更新契约 → 重跑受影响任务
+```
+
+---
+
+## ► Phase 5.9：前端知识库注入准备
+
+在启动前端开发循环前执行：
+
+```
+STEP 0 - 读取用户级团队记忆：
+  1. 复用 PROJECT_TECH_STACK。
+  2. 若 ~/.claude/team-memory/patterns/frontend-patterns.md 存在：
+       筛选技术栈匹配条目，生成 FRONTEND_MEMORY_HINT。
+  3. 若 ~/.claude/team-memory/patterns/deployment-patterns.md 存在：
+       筛选技术栈匹配条目，生成 DEPLOYMENT_MEMORY_HINT。
+  4. 合并 PHASE6_MEMORY_HINT = FRONTEND_MEMORY_HINT + DEPLOYMENT_MEMORY_HINT。
+  5. 若无匹配条目，PHASE6_MEMORY_HINT 为空，不阻塞 Phase 6。
 ```
 
 ---
@@ -331,17 +436,19 @@ FOR 每个 project-tasks/frontend-tasklist.md 中的 [ ] 任务：
 
   STEP 1 - 调用 frontend-developer 实现该任务：
     输入：
+      - 若 PHASE6_MEMORY_HINT 非空，将其作为任务指令的第一段发送给 frontend-developer
       - 读取 docs/API_CONTRACT.md（必须第一步）
       - 读取 docs/DESIGN_SYSTEM.md（必须第二步，所有样式数值来源）
       - 读取 docs/DYNAMIC_CONTENT_MAP.md（动态内容绑定规则）
       - 读取 docs/TECH_SPEC.md
-      - 读取 docs/PRD.md（用户故事和UI需求）
+      - 读取 docs/PRD.md（用户故事和 UI 需求）
       - 读取当前任务描述
     要求：
       - 所有 API 调用路径、字段名与契约完全一致
       - 所有颜色/字体/间距必须使用 DESIGN_SYSTEM 中定义的 CSS 变量
       - 不得硬编码任何颜色值、字号、间距值
       - 不得猜测接口结构
+      - Phase 开始、PASS、FAIL、重试前后都更新 .claude/team-state/STATE.md
 
   STEP 2 - 调用 testing-evidence-collector 验证：
     验证内容：
@@ -351,12 +458,50 @@ FOR 每个 project-tasks/frontend-tasklist.md 中的 [ ] 任务：
       - 颜色/字体/间距是否使用了 CSS 变量（不得出现硬编码数值）
     产出：PASS 或 FAIL + 截图证据
 
-  STEP 3 - 决策（同后端 Loop 规则）
+  STEP 3 - 决策（三级智能重试）：
+    记录当前任务重试次数 RETRY_COUNT，初始值为 0。
+
+    PASS →
+      - 将任务标记为 [x]
+      - 将 RETRY_COUNT 重置为 0
+      - 更新 .claude/team-state/STATE.md：Last Result = PASS，Next Action = Next frontend task
+      - 进入下一任务
+
+    FAIL 且 RETRY_COUNT = 0（第1次重试）→
+      - RETRY_COUNT = 1
+      - 将失败原因追加到 .claude/team-state/RETRY_LOG.md
+      - 查 ~/.claude/team-memory/patterns/frontend-patterns.md 和 deployment-patterns.md
+      - 若有错误关键词匹配条目，将该条目的"解决方案"字段加入重试指令头部
+      - 打回 frontend-developer，附 QA 反馈和记忆提示
+
+    FAIL 且 RETRY_COUNT = 1（第2次重试）→
+      - RETRY_COUNT = 2
+      - 将失败原因追加到 .claude/team-state/RETRY_LOG.md
+      - 按 QA 失败关键词分流：
+        * 包含"路径硬编码""VITE_API_BASE""硬编码 /api" → 读取 TECH_SPEC 部署路径规范，打回 frontend-developer
+        * 包含"CSS 变量""硬编码颜色""硬编码字号""硬编码间距" → 读取 DESIGN_SYSTEM 对应章节，打回 frontend-developer
+        * 包含"字段""接口""字段名不符""契约" → 调 software-architect 复查 API_CONTRACT，再打回 frontend-developer
+        * 包含"视觉""布局""间距""颜色不符" → 调 ui-designer 复查 DESIGN_SYSTEM，再打回 frontend-developer
+        * 其他 → 打回 frontend-developer，附完整 QA 反馈
+
+    FAIL 且 RETRY_COUNT >= 2（第3次失败）→
+      - 更新 .claude/team-state/STATE.md：Last Result = BLOCKED，Retry Count = 3
+      - 生成卡点报告，包含任务 ID、3 次失败原因、已尝试修复思路、建议人工介入点
+      - 暂停，等待用户输入"继续"或提供修复思路
 ```
 
 ---
 
 ## ► Phase 7：安全审查
+
+**Phase 7 前：读取安全知识库**
+
+```
+读取 ~/.claude/team-memory/patterns/security-patterns.md（若存在）。
+按 PROJECT_TECH_STACK 筛选匹配条目，生成 SECURITY_MEMORY_HINT。
+若 SECURITY_MEMORY_HINT 非空，将其作为 security-engineer 任务指令第一段。
+若文件不存在或无匹配条目，不阻塞安全审查。
+```
 
 **调用 `security-engineer`**
 
@@ -453,6 +598,49 @@ FOR 每个 project-tasks/frontend-tasklist.md 中的 [ ] 任务：
       * 数据库迁移使用说明（如何新增迁移文件、命名规范）
       * 项目目录结构
   - docs/API_DOC.md（基于 API_CONTRACT 的可读版文档）
+```
+
+---
+
+## ► Phase 11.5：知识库写回（仅 READY 后执行）
+
+```
+执行条件：
+  - Phase 10 reality-checker 输出 READY。
+  - 若输出 NEEDS WORK、项目中止、任务未完成，跳过写回。
+
+写回来源：
+  - .claude/team-state/RETRY_LOG.md
+  - .claude/team-state/LEARNINGS.md
+  - docs/BACKEND_STATUS.md 的已解决问题
+  - docs/SECURITY_REPORT.md 中已修复的高危或中危问题
+  - docs/REVIEW_REPORT.md 中已修复的 MUST FIX 问题
+
+写回步骤：
+  1. 提炼每个已验证有效的模式：
+     - 错误类型简称
+     - 触发场景
+     - 错误表现
+     - 最终有效解决方案
+     - 技术栈
+     - 出现次数
+     - 最后更新
+  2. 判断归属：
+     - backend → backend-patterns.md
+     - frontend → frontend-patterns.md
+     - 契约问题 → contract-patterns.md
+     - QA 验证问题 → qa-patterns.md
+     - 安全问题 → security-patterns.md
+     - 部署问题 → deployment-patterns.md
+  3. 若对应文件存在同名标题：
+     - 只更新"出现次数"和"最后更新"
+  4. 若对应文件不存在同名标题：
+     - 按模板格式追加新条目
+  5. 写回后报告：
+     - 写入条目数
+     - 更新条目数
+     - 跳过条目数
+     - 目标路径 ~/.claude/team-memory/patterns/
 ```
 
 ---

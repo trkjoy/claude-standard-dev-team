@@ -13,6 +13,44 @@
 
 ## 安装
 
+### 方式零：安装脚本（推荐，含用户级记忆库）
+
+```bash
+git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+cd claude-standard-dev-team
+bash scripts/install.sh
+```
+
+这会完成两件事：
+
+1. 将 13 个 agent 安装到 `~/.claude/agents/`
+2. 初始化用户级长期记忆库 `~/.claude/team-memory/patterns/`
+
+安装后，在每个新项目目录执行一次初始化：
+
+```bash
+bash /path/to/claude-standard-dev-team/scripts/team-init.sh
+```
+
+这会在当前项目生成：
+
+- `CLAUDE.md`
+- `.claude/settings.json`
+- `.claude/team-state/STATE.md`
+- `.claude/team-state/RETRY_LOG.md`
+- `.claude/team-state/DECISIONS.md`
+- `.claude/team-state/LEARNINGS.md`
+
+填写 `CLAUDE.md` 中的技术栈和部署环境后，在 Claude Code 中说：
+
+```text
+使用标准团队开发 你的需求
+```
+
+orchestrator 会读取项目状态和用户级记忆库，按阶段自动拆解、开发、验证、失败打回和恢复。
+
+---
+
 ### 方式一：克隆仓库后批量复制（推荐）
 
 ```bash
@@ -97,7 +135,7 @@ cp ~/.claude/agents/*.md ~/.claude/agents/_backup_$(date +%Y%m%d)/
 ```bash
 cd /your/clone/path/claude-standard-dev-team
 git pull
-cp agents/*.md ~/.claude/agents/
+bash scripts/install.sh
 ```
 
 ---

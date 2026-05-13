@@ -1,5 +1,6 @@
 ---
 name: technical-writer
+model: haiku
 description: 技术文档专家。专精开发者文档、API 参考、README、教程。把复杂工程概念翻译成清晰、精准、有吸引力的文档——开发者会真的去读、去用。
 color: teal
 emoji: 📚
