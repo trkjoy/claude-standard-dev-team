@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # 安装标准 AI 开发团队（Mac / Linux / WSL）
+# 支持多平台：Claude Code / Hermes / OpenClaw / Codex CLI / Gemini CLI
 # 版本相同则幂等跳过，版本不同则覆盖更新
 set -euo pipefail
 
@@ -7,12 +8,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 AGENTS_SRC="$REPO_DIR/agents"
 TEMPLATES_SRC="$REPO_DIR/templates/memory"
-AGENTS_DEST="$HOME/.claude/agents"
-MEMORY_DEST="$HOME/.claude/team-memory/patterns"
 COMMANDS_SRC="$REPO_DIR/.claude/commands"
-COMMANDS_DEST="$HOME/.claude/commands"
 VERSION_FILE="$REPO_DIR/VERSION"
-INSTALLED_VERSION_FILE="$HOME/.claude/team-version"
+REPO_VERSION="$(cat "$VERSION_FILE" | tr -d '[:space:]')"
 
 if [ ! -d "$AGENTS_SRC" ]; then
   echo "❌ 找不到 agents 目录：$AGENTS_SRC" >&2
@@ -20,74 +18,323 @@ if [ ! -d "$AGENTS_SRC" ]; then
   exit 1
 fi
 
-# 版本检查
-REPO_VERSION="$(cat "$VERSION_FILE" | tr -d '[:space:]')"
-INSTALLED_VERSION=""
-if [ -f "$INSTALLED_VERSION_FILE" ]; then
-  INSTALLED_VERSION="$(cat "$INSTALLED_VERSION_FILE" | tr -d '[:space:]')"
+# ─── 平台选择 ─────────────────────────────────────────────────────────────────
+
+PLATFORM="${1:-}"
+
+if [ -z "$PLATFORM" ]; then
+  echo ""
+  echo "┌──────────────────────────────────────────────────────────┐"
+  echo "│   AI 标准开发团队 v${REPO_VERSION}  ·  安装程序              │"
+  echo "└──────────────────────────────────────────────────────────┘"
+  echo ""
+  echo "请选择目标平台："
+  echo ""
+  echo "  1) Claude Code  — ~/.claude/agents/        (推荐，多 Agent 并行)"
+  echo "  2) Hermes       — ~/.hermes/skills/         (Nous Research)"
+  echo "  3) OpenClaw     — ~/.openclaw/skills/       (agentskills.io)"
+  echo "  4) Codex CLI    — ~/.codex/AGENTS.md        (OpenAI)"
+  echo "  5) Gemini CLI   — ~/.gemini/GEMINI.md       (Google)"
+  echo ""
+  printf "输入序号 [1-5]，按 Enter 确认（默认 1）："; read -r _choice
+  _choice="${_choice:-1}"
+  case "$_choice" in
+    1) PLATFORM="claude"   ;;
+    2) PLATFORM="hermes"   ;;
+    3) PLATFORM="openclaw" ;;
+    4) PLATFORM="codex"    ;;
+    5) PLATFORM="gemini"   ;;
+    *) echo "❌ 无效选择，请输入 1-5" >&2; exit 1 ;;
+  esac
 fi
+
+# ─── 版本文件（每平台独立）────────────────────────────────────────────────────
+
+case "$PLATFORM" in
+  claude)   VER_FILE="$HOME/.claude/team-version"         ;;
+  hermes)   VER_FILE="$HOME/.hermes/team-version"         ;;
+  openclaw) VER_FILE="$HOME/.openclaw/team-version"       ;;
+  codex)    VER_FILE="$HOME/.codex/team-version"          ;;
+  gemini)   VER_FILE="$HOME/.gemini/team-version"         ;;
+  *)        echo "❌ 不支持的平台：$PLATFORM" >&2; exit 1  ;;
+esac
+
+INSTALLED_VERSION=""
+[ -f "$VER_FILE" ] && INSTALLED_VERSION="$(cat "$VER_FILE" | tr -d '[:space:]')"
 
 if [ "$REPO_VERSION" = "$INSTALLED_VERSION" ]; then
   echo ""
-  echo "✅ 已是最新版本 v$REPO_VERSION，无需重新安装"
+  echo "✅ [$PLATFORM] 已是最新版本 v$REPO_VERSION，无需重新安装"
   echo ""
   exit 0
 fi
 
 echo ""
 if [ -n "$INSTALLED_VERSION" ]; then
-  echo "🔄 版本更新：v$INSTALLED_VERSION → v$REPO_VERSION"
+  echo "🔄 [$PLATFORM] 版本更新：v$INSTALLED_VERSION → v$REPO_VERSION"
 else
-  echo "📦 正在安装标准 AI 开发团队 v$REPO_VERSION..."
+  echo "📦 正在安装标准 AI 开发团队 v$REPO_VERSION → $PLATFORM..."
 fi
 echo ""
 
-# 1. 安装 agent 文件到 ~/.claude/agents/
-mkdir -p "$AGENTS_DEST"
-cp "$AGENTS_SRC"/*.md "$AGENTS_DEST/"
-agent_count="$(find "$AGENTS_SRC" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')"
-echo "✅ 已安装 $agent_count 个 agent -> $AGENTS_DEST"
+# ─── 工具函数 ─────────────────────────────────────────────────────────────────
 
-# 2. 初始化用户级知识库（已存在则跳过，保留历史积累）
-mkdir -p "$MEMORY_DEST"
-for pattern in backend frontend contract qa security deployment; do
-  src="$TEMPLATES_SRC/${pattern}-patterns.md"
-  dest="$MEMORY_DEST/${pattern}-patterns.md"
-  if [ ! -f "$src" ]; then
-    echo "❌ 模板文件缺失：$src" >&2
-    exit 1
-  fi
-  if [ -f "$dest" ]; then
-    echo "  ⏭  跳过（已存在）：${pattern}-patterns.md"
+# 从 agent .md 文件提取 frontmatter 中的 name 字段
+_get_name() {
+  awk 'BEGIN{n=0} /^---/{n++; next} n==1 && /^name:/{sub(/^name:[[:space:]]*/,""); print; exit}' "$1"
+}
+
+# 从 frontmatter 提取 description（支持单行和 YAML block scalar "|"）
+_get_description() {
+  awk '
+    BEGIN { n=0; block=0; done=0 }
+    /^---/   { n++; next }
+    n==1 && /^description:[[:space:]]*\|/ { block=1; next }
+    n==1 && block && /^[[:space:]]/ && !done {
+      sub(/^[[:space:]]+/, "")
+      if ($0 != "") { print; done=1 }
+      next
+    }
+    n==1 && block && !/^[[:space:]]/ { block=0 }
+    n==1 && !block && /^description:/ {
+      sub(/^description:[[:space:]]*/,"")
+      print; exit
+    }
+  ' "$1"
+}
+
+# 提取 frontmatter 之后的正文（只跳过前两个 ---，正文内的 --- 原样保留）
+_get_body() {
+  awk 'BEGIN{n=0} n<2 && /^---/{n++; next} n>=2{print}' "$1"
+}
+
+_write_version() {
+  mkdir -p "$(dirname "$VER_FILE")"
+  printf '%s' "$REPO_VERSION" > "$VER_FILE"
+}
+
+# ─── Claude Code 安装 ────────────────────────────────────────────────────────
+
+install_claude() {
+  local AGENTS_DEST="$HOME/.claude/agents"
+  local MEMORY_DEST="$HOME/.claude/team-memory/patterns"
+  local COMMANDS_DEST="$HOME/.claude/commands"
+
+  # 1. Agent 文件
+  mkdir -p "$AGENTS_DEST"
+  cp "$AGENTS_SRC"/*.md "$AGENTS_DEST/"
+  local cnt
+  cnt="$(find "$AGENTS_SRC" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')"
+  echo "✅ 已安装 $cnt 个 agent -> $AGENTS_DEST"
+
+  # 2. 用户级知识库（已存在则跳过，保留历史积累）
+  mkdir -p "$MEMORY_DEST"
+  for p in backend frontend contract qa security deployment; do
+    local src="$TEMPLATES_SRC/${p}-patterns.md"
+    local dest="$MEMORY_DEST/${p}-patterns.md"
+    if [ ! -f "$src" ]; then echo "❌ 模板文件缺失：$src" >&2; exit 1; fi
+    if [ -f "$dest" ]; then
+      echo "  ⏭  跳过（已存在）：${p}-patterns.md"
+    else
+      cp "$src" "$dest"
+      echo "  ✅ 初始化：${p}-patterns.md"
+    fi
+  done
+
+  # 3. 全局命令
+  if [ -d "$COMMANDS_SRC" ]; then
+    mkdir -p "$COMMANDS_DEST"
+    cp "$COMMANDS_SRC/team-install.md" "$COMMANDS_DEST/"
+    cp "$COMMANDS_SRC/team-init.md"    "$COMMANDS_DEST/"
+    echo "✅ 已注册全局命令 -> $COMMANDS_DEST"
   else
-    cp "$src" "$dest"
-    echo "  ✅ 初始化：${pattern}-patterns.md"
+    echo "  ⚠  跳过命令注册（.claude/commands/ 目录不存在）"
   fi
-done
 
-# 3. 注册全局 Claude Code 命令（让 /team-install 和 /team-init 全局可用）
-if [ -d "$COMMANDS_SRC" ]; then
-  mkdir -p "$COMMANDS_DEST"
-  cp "$COMMANDS_SRC/team-install.md" "$COMMANDS_DEST/"
-  cp "$COMMANDS_SRC/team-init.md" "$COMMANDS_DEST/"
-  echo "✅ 已注册全局命令 -> $COMMANDS_DEST"
-else
-  echo "  ⚠  跳过命令注册（.claude/commands/ 目录不存在）"
-fi
+  _write_version
 
-# 写入已安装版本
-printf '%s' "$REPO_VERSION" > "$INSTALLED_VERSION_FILE"
+  echo ""
+  echo "✅ 安装完成！版本 v$REPO_VERSION (Claude Code)"
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "后续操作全在 Claude Code 内完成："
+  echo ""
+  echo "  进入项目目录，打开 Claude Code，运行："
+  echo "    /team-init"
+  echo ""
+  echo "  初始化后说："
+  echo "    使用标准团队开发 你的需求"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+}
 
+# ─── Hermes / OpenClaw Skills 安装（共用格式逻辑）────────────────────────────
+
+_install_skills_platform() {
+  local platform="$1"
+  local skills_base="$2"
+  local team_dir="$skills_base/standard-dev-team"
+
+  mkdir -p "$team_dir"
+  echo "  目标目录：$team_dir"
+  echo ""
+
+  local count=0
+  for f in "$AGENTS_SRC"/*.md; do
+    local name desc body escaped_desc
+    name="$(_get_name "$f")"
+    desc="$(_get_description "$f")"
+    body="$(_get_body "$f")"
+    # 对 YAML inline 字符串转义双引号
+    escaped_desc="${desc//\"/\\\"}"
+
+    local skill_dir="$team_dir/$name"
+    mkdir -p "$skill_dir"
+    local skill_file="$skill_dir/SKILL.md"
+
+    {
+      printf -- '---\n'
+      printf 'name: %s\n' "$name"
+      printf 'description: "%s"\n' "$escaped_desc"
+      printf 'version: %s\n' "$REPO_VERSION"
+      printf 'metadata:\n'
+      printf '  hermes:\n'
+      printf '    tags: [development, ai-team, standard-dev-team]\n'
+      printf '    category: development\n'
+      printf -- '---\n\n'
+      printf '%s\n' "$body"
+    } > "$skill_file"
+
+    echo "  ✅ $name"
+    count=$((count + 1))
+  done
+
+  _write_version
+
+  echo ""
+  echo "✅ 已安装 $count 个 skill -> $team_dir"
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "使用方法（${platform} CLI）："
+  echo ""
+  echo "  1. 启动 ${platform}："
+  echo "       $platform"
+  echo ""
+  echo "  2. 激活总指挥，开始开发任务："
+  echo "       /orchestrator"
+  echo "       → 然后描述你的需求，例如："
+  echo "         使用标准团队开发 一个待办事项 Web App"
+  echo ""
+  echo "  3. 也可直接调用单个角色："
+  echo "       /product-manager      产品需求分析"
+  echo "       /software-architect   技术架构设计"
+  echo "       /code-reviewer        代码评审"
+  echo "       /security-engineer    安全审查"
+  echo ""
+  echo "  4. 查看所有已安装 skill："
+  echo "       /skills"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+}
+
+install_hermes()   { _install_skills_platform "hermes"   "$HOME/.hermes/skills";   }
+install_openclaw() { _install_skills_platform "openclaw" "$HOME/.openclaw/skills"; }
+
+# ─── 生成合并团队文档（Codex / Gemini 共用）──────────────────────────────────
+
+_gen_team_doc() {
+  local out_file="$1"
+  local platform="$2"
+
+  mkdir -p "$(dirname "$out_file")"
+
+  {
+    printf '# 标准 AI 开发团队 (Standard AI Development Team)\n\n'
+    printf '> 版本：%s  |  生成工具：claude-standard-dev-team\n' "$REPO_VERSION"
+    printf '> 请勿手动编辑，重新运行 install.sh 可升级。\n\n'
+    printf -- '---\n\n'
+    printf '## 使用方式\n\n'
+    printf '当用户要求开发软件时，以 **orchestrator（总指挥）** 角色协调整个团队，\n'
+    printf '按以下协作链路推进：需求分析 → 架构设计 → 实现 → QA → 安全 → 上线。\n\n'
+    printf -- '---\n\n'
+    printf '## 团队成员\n\n'
+    printf '| 角色 | 职责摘要 |\n'
+    printf '|------|----------|\n'
+
+    for f in "$AGENTS_SRC"/*.md; do
+      local name desc
+      name="$(_get_name "$f")"
+      desc="$(_get_description "$f")"
+      printf '| `%s` | %s |\n' "$name" "$desc"
+    done
+
+    printf '\n---\n\n'
+    printf '## 角色详细定义\n\n'
+
+    for f in "$AGENTS_SRC"/*.md; do
+      local name desc body
+      name="$(_get_name "$f")"
+      desc="$(_get_description "$f")"
+      body="$(_get_body "$f")"
+      printf '### %s\n\n' "$name"
+      printf '> %s\n\n' "$desc"
+      printf '%s\n\n' "$body"
+      printf -- '---\n\n'
+    done
+  } > "$out_file"
+}
+
+install_codex() {
+  local out_file="$HOME/.codex/AGENTS.md"
+  _gen_team_doc "$out_file" "codex"
+  _write_version
+
+  echo "✅ 已生成团队定义 -> $out_file"
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "使用方法（Codex CLI）："
+  echo ""
+  echo "  Codex CLI 会自动加载 ~/.codex/AGENTS.md 作为全局指令。"
+  echo ""
+  echo "  命令行直接调用："
+  echo "    codex '以 orchestrator 角色，使用标准团队开发 <你的需求>'"
+  echo ""
+  echo "  交互模式中说："
+  echo "    请以 orchestrator 角色，带领团队开发 <你的需求>"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+}
+
+install_gemini() {
+  local out_file="$HOME/.gemini/GEMINI.md"
+  _gen_team_doc "$out_file" "gemini"
+  _write_version
+
+  echo "✅ 已生成团队定义 -> $out_file"
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "使用方法（Gemini CLI）："
+  echo ""
+  echo "  Gemini CLI 会自动加载 ~/.gemini/GEMINI.md 作为全局指令。"
+  echo ""
+  echo "  命令行直接调用："
+  echo "    gemini '以 orchestrator 角色，使用标准团队开发 <你的需求>'"
+  echo ""
+  echo "  交互模式中说："
+  echo "    请以 orchestrator 角色，带领团队开发 <你的需求>"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+}
+
+# ─── 主流程 ──────────────────────────────────────────────────────────────────
+
+echo "🎯 目标平台：$PLATFORM"
 echo ""
-echo "✅ 安装完成！版本 v$REPO_VERSION"
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "后续操作全在 Claude Code 内完成："
-echo ""
-echo "  进入项目目录，打开 Claude Code，运行："
-echo "    /team-init"
-echo ""
-echo "  初始化后说："
-echo "    使用标准团队开发 你的需求"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
+
+case "$PLATFORM" in
+  claude)   install_claude   ;;
+  hermes)   install_hermes   ;;
+  openclaw) install_openclaw ;;
+  codex)    install_codex    ;;
+  gemini)   install_gemini   ;;
+esac
