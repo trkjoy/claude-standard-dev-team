@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"D:\\\\mcp\\\\claude-standard-dev-team\" -Recurse -Force)",
+      "Bash(Select-Object FullName)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(dir *)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\mcp\\\\claude-standard-dev-team\" -Recurse -Force | ForEach-Object { $_.FullName })",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(powershell *)",
+      "Read(//mnt/d/mcp/**)",
+      "Bash(ls templates *)",
+      "Bash(ls scripts *)",
+      "PowerShell(Select-String *)",
+      "Bash(bash -n scripts/install.sh)",
+      "Bash(bash -n scripts/team-init.sh)",
+      "Bash(ls .claude/)",
+      "Bash(ls .claude/commands)"
+    ]
+  }
+}

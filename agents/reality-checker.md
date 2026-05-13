@@ -58,7 +58,7 @@ model: opus
 - [ ] 所有任务清单项均为 `[x]`（backend + frontend）
 - [ ] BACKEND_STATUS.md 的 ISSUES 章节为空或写"无"
 - [ ] SECURITY_REPORT.md 无🔴高危问题
-- [ ] REVIEW_REPORT.md 无🔴必须修复项
+- [ ] REVIEW_REPORT.md 无🔴必须修复项（含"过度复杂"阻断项）
 - [ ] PRD 中所有 P0 功能的验收标准均已满足
 - [ ] 服务可以正常启动（docker-compose up 成功）
 - [ ] 核心接口可以正常响应
