@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 安装标准 AI 开发团队（Mac / Linux / WSL）
-# 幂等：重复运行安全，已有记忆库内容不会被覆盖
+# 版本相同则幂等跳过，版本不同则覆盖更新
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,6 +11,8 @@ AGENTS_DEST="$HOME/.claude/agents"
 MEMORY_DEST="$HOME/.claude/team-memory/patterns"
 COMMANDS_SRC="$REPO_DIR/.claude/commands"
 COMMANDS_DEST="$HOME/.claude/commands"
+VERSION_FILE="$REPO_DIR/VERSION"
+INSTALLED_VERSION_FILE="$HOME/.claude/team-version"
 
 if [ ! -d "$AGENTS_SRC" ]; then
   echo "❌ 找不到 agents 目录：$AGENTS_SRC" >&2
@@ -18,8 +20,26 @@ if [ ! -d "$AGENTS_SRC" ]; then
   exit 1
 fi
 
+# 版本检查
+REPO_VERSION="$(cat "$VERSION_FILE" | tr -d '[:space:]')"
+INSTALLED_VERSION=""
+if [ -f "$INSTALLED_VERSION_FILE" ]; then
+  INSTALLED_VERSION="$(cat "$INSTALLED_VERSION_FILE" | tr -d '[:space:]')"
+fi
+
+if [ "$REPO_VERSION" = "$INSTALLED_VERSION" ]; then
+  echo ""
+  echo "✅ 已是最新版本 v$REPO_VERSION，无需重新安装"
+  echo ""
+  exit 0
+fi
+
 echo ""
-echo "📦 正在安装标准 AI 开发团队..."
+if [ -n "$INSTALLED_VERSION" ]; then
+  echo "🔄 版本更新：v$INSTALLED_VERSION → v$REPO_VERSION"
+else
+  echo "📦 正在安装标准 AI 开发团队 v$REPO_VERSION..."
+fi
 echo ""
 
 # 1. 安装 agent 文件到 ~/.claude/agents/
@@ -55,8 +75,11 @@ else
   echo "  ⚠  跳过命令注册（.claude/commands/ 目录不存在）"
 fi
 
+# 写入已安装版本
+printf '%s' "$REPO_VERSION" > "$INSTALLED_VERSION_FILE"
+
 echo ""
-echo "✅ 安装完成！"
+echo "✅ 安装完成！版本 v$REPO_VERSION"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "后续操作全在 Claude Code 内完成："

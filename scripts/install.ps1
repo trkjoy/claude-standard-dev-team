@@ -1,16 +1,18 @@
 ﻿#Requires -Version 5.1
 # 安装标准 AI 开发团队（Windows PowerShell / PowerShell 7+）
-# 幂等：重复运行安全，已有记忆库内容不会被覆盖
+# 版本相同则幂等跳过，版本不同则覆盖更新
 $ErrorActionPreference = 'Stop'
 
-$ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoDir    = Split-Path -Parent $ScriptDir
-$AgentsSrc  = Join-Path $RepoDir 'agents'
-$TplSrc     = Join-Path $RepoDir 'templates\memory'
-$AgentsDest  = Join-Path $HOME    '.claude\agents'
-$MemDest     = Join-Path $HOME    '.claude\team-memory\patterns'
-$CommandsSrc = Join-Path $RepoDir '.claude\commands'
-$CommandsDest= Join-Path $HOME    '.claude\commands'
+$ScriptDir           = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoDir             = Split-Path -Parent $ScriptDir
+$AgentsSrc           = Join-Path $RepoDir 'agents'
+$TplSrc              = Join-Path $RepoDir 'templates\memory'
+$AgentsDest          = Join-Path $HOME    '.claude\agents'
+$MemDest             = Join-Path $HOME    '.claude\team-memory\patterns'
+$CommandsSrc         = Join-Path $RepoDir '.claude\commands'
+$CommandsDest        = Join-Path $HOME    '.claude\commands'
+$VersionFile         = Join-Path $RepoDir 'VERSION'
+$InstalledVersionFile= Join-Path $HOME    '.claude\team-version'
 
 if (-not (Test-Path $AgentsSrc)) {
     Write-Host ''
@@ -19,8 +21,23 @@ if (-not (Test-Path $AgentsSrc)) {
     exit 1
 }
 
+# 版本检查
+$RepoVersion      = (Get-Content $VersionFile -Raw).Trim()
+$InstalledVersion = if (Test-Path $InstalledVersionFile) { (Get-Content $InstalledVersionFile -Raw).Trim() } else { '' }
+
+if ($RepoVersion -eq $InstalledVersion) {
+    Write-Host ''
+    Write-Host "✅ 已是最新版本 v$RepoVersion，无需重新安装" -ForegroundColor Green
+    Write-Host ''
+    exit 0
+}
+
 Write-Host ''
-Write-Host '📦 正在安装标准 AI 开发团队...' -ForegroundColor Cyan
+if ($InstalledVersion) {
+    Write-Host "🔄 版本更新：v$InstalledVersion → v$RepoVersion" -ForegroundColor Yellow
+} else {
+    Write-Host "📦 正在安装标准 AI 开发团队 v$RepoVersion..." -ForegroundColor Cyan
+}
 Write-Host ''
 
 # 1. 安装 agent 文件到 ~/.claude/agents/
@@ -56,8 +73,11 @@ if (Test-Path $CommandsSrc) {
     Write-Host '  ⚠  跳过命令注册（.claude\commands\ 目录不存在）'
 }
 
+# 写入已安装版本
+$RepoVersion | Out-File -FilePath $InstalledVersionFile -Encoding utf8 -NoNewline
+
 Write-Host ''
-Write-Host '✅ 安装完成！' -ForegroundColor Green
+Write-Host "✅ 安装完成！版本 v$RepoVersion" -ForegroundColor Green
 Write-Host ''
 Write-Host '========================================='
 Write-Host '后续操作全在 Claude Code 内完成：'
