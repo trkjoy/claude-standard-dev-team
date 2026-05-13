@@ -1,19 +1,49 @@
 # 安装指南
 
-把"标准团队"装进你自己的 Claude Code，3 分钟搞定。
-
 ## 前置条件
 
-- 已安装 [Claude Code CLI](https://docs.claude.com/en/docs/claude-code/quickstart)
-- 在终端执行 `claude --version` 能显示版本号
-
-如果还没装，先去官方装好再回来。
+- 已安装 [Claude Code](https://docs.claude.com/en/docs/claude-code/quickstart)，验证：`claude --version`
 
 ---
 
-## 安装
+## 安装方式
 
-### 方式零：安装脚本（推荐，含用户级记忆库）
+### 方式一：在 Claude Code 内用 Slash Command（推荐，全程不用离开 Claude Code）
+
+```bash
+# 1. 克隆仓库（仅首次）
+git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+
+# 2. 在仓库目录打开 Claude Code
+cd claude-standard-dev-team
+claude .
+
+# 3. 在 Claude Code 里运行安装命令
+/team-install
+```
+
+`/team-install` 会自动完成：
+- 安装 13 个 agent → `~/.claude/agents/`
+- 初始化知识库 → `~/.claude/team-memory/patterns/`
+- 注册全局命令 → `~/.claude/commands/`（之后 `/team-install` 和 `/team-init` 在所有项目可用）
+
+**安装后，后续流程全在 Claude Code 内完成：**
+
+```
+# 进入你的项目目录，打开 Claude Code，运行：
+/team-init
+
+# 回答两个问题（技术栈 + 部署环境），然后说：
+使用标准团队开发 你的需求
+```
+
+> **之后不再需要仓库目录。** `/team-install` 和 `/team-init` 已注册为全局命令，在任何项目里都可以直接用。
+
+---
+
+### 方式二：脚本安装（安装后同样用 /team-init 初始化）
+
+**Mac / Linux / WSL：**
 
 ```bash
 git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
@@ -21,147 +51,130 @@ cd claude-standard-dev-team
 bash scripts/install.sh
 ```
 
-这会完成两件事：
+**Windows（PowerShell）：**
 
-1. 将 13 个 agent 安装到 `~/.claude/agents/`
-2. 初始化用户级长期记忆库 `~/.claude/team-memory/patterns/`
-
-安装后，在每个新项目目录执行一次初始化：
-
-```bash
-bash /path/to/claude-standard-dev-team/scripts/team-init.sh
-```
-
-这会在当前项目生成：
-
-- `CLAUDE.md`
-- `.claude/settings.json`
-- `.claude/team-state/STATE.md`
-- `.claude/team-state/RETRY_LOG.md`
-- `.claude/team-state/DECISIONS.md`
-- `.claude/team-state/LEARNINGS.md`
-
-填写 `CLAUDE.md` 中的技术栈和部署环境后，在 Claude Code 中说：
-
-```text
-使用标准团队开发 你的需求
-```
-
-orchestrator 会读取项目状态和用户级记忆库，按阶段自动拆解、开发、验证、失败打回和恢复。
-
----
-
-### 方式一：克隆仓库后批量复制（推荐）
-
-```bash
-# 1. 克隆仓库到任意位置
+```powershell
 git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
 cd claude-standard-dev-team
-
-# 2. 确保 ~/.claude/agents 目录存在
-mkdir -p ~/.claude/agents
-
-# 3. 复制全部 agent 到 Claude Code agent 目录（12 个团队成员 + 1 个总指挥）
-cp agents/*.md ~/.claude/agents/
-
-# 4. 验证
-ls ~/.claude/agents/ | grep -E "orchestrator|product-manager|software-architect"
+pwsh .\scripts\install.ps1
+# 或旧版 PowerShell：
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-看到 3 个文件名就装成功了。
+脚本与 `/team-install` 效果相同，额外将全局命令注册到 `~/.claude/commands/`。
 
-### 方式二：只装部分 agent
+**安装完成后，进入项目目录，在 Claude Code 里运行：**
 
-如果你只想用其中几个（比如只要 product-manager 帮你写 PRD），可以只复制对应文件：
-
-```bash
-cp agents/product-manager.md ~/.claude/agents/
-cp agents/software-architect.md ~/.claude/agents/
+```
+/team-init
 ```
 
-但 **orchestrator 必须配合至少另外 2-3 个 agent 才有意义**——它自己不写代码，只是调度。
+交互式问两个问题（技术栈 + 部署环境），自动生成所有配置文件，无需手动编辑。
 
 ---
 
-## 验证安装
+### 方式三：只装部分 agent（高级用法）
 
-打开 Claude Code，新开一个对话窗口，输入：
+```bash
+# 只需要 product-manager 帮你写 PRD？
+cp agents/product-manager.md ~/.claude/agents/
+```
+
+注意：**orchestrator 必须配合至少 2-3 个 agent 才有意义**——它自己不写代码，只负责调度。
+
+---
+
+## /team-init 生成的文件
 
 ```
-使用标准团队帮我做一个简单的 todo 应用
+你的项目目录/
+  CLAUDE.md                      ← 技术栈、部署环境已填入，无需再编辑
+  .claude/
+    settings.json                ← Claude Code 权限配置
+    team-state/
+      STATE.md                   ← 运行状态（中断恢复用）
+      RETRY_LOG.md               ← 失败重试历史
+      DECISIONS.md               ← 用户确认过的决策
+      LEARNINGS.md               ← 项目内临时经验
 ```
 
-如果看到主对话回复类似下面的内容，就装成功了：
+---
 
-> 收到。我现在派 orchestrator 接管这个项目，会按 11 阶段流程跑：先让 product-manager 写 PRD，等你确认范围后再进入 API 契约设计...
+## 升级
 
-如果没有任何反应，或者主对话直接开始写代码（没调 orchestrator），检查：
+```bash
+# Mac/Linux/WSL
+cd /path/to/claude-standard-dev-team && git pull && bash scripts/install.sh
 
-1. 文件确实在 `~/.claude/agents/` 下（不是 `~/Claude/agents/` 或别的地方）
-2. 文件后缀是 `.md`，不是 `.md.txt`
-3. 重启 Claude Code 让它重新加载 agent 列表
+# Windows
+cd C:\path\to\claude-standard-dev-team; git pull; pwsh .\scripts\install.ps1
+
+# 或在 Claude Code 内（进入仓库目录后）
+/team-install
+```
+
+升级不影响已有知识库内容（幂等）。
 
 ---
 
 ## 卸载
 
 ```bash
-cd ~/.claude/agents/
-rm orchestrator.md product-manager.md software-architect.md ui-designer.md \
-   database-optimizer.md backend-architect.md frontend-developer.md \
-   devops-automator.md testing-evidence-collector.md security-engineer.md \
-   code-reviewer.md reality-checker.md technical-writer.md
+# Mac/Linux/WSL
+rm ~/.claude/agents/orchestrator.md \
+   ~/.claude/agents/product-manager.md \
+   ~/.claude/agents/software-architect.md \
+   ~/.claude/agents/ui-designer.md \
+   ~/.claude/agents/database-optimizer.md \
+   ~/.claude/agents/backend-architect.md \
+   ~/.claude/agents/frontend-developer.md \
+   ~/.claude/agents/devops-automator.md \
+   ~/.claude/agents/testing-evidence-collector.md \
+   ~/.claude/agents/security-engineer.md \
+   ~/.claude/agents/code-reviewer.md \
+   ~/.claude/agents/reality-checker.md \
+   ~/.claude/agents/technical-writer.md
+rm -f ~/.claude/commands/team-install.md ~/.claude/commands/team-init.md
 ```
 
----
-
-## 与你已有的 agent 冲突？
-
-如果 `~/.claude/agents/` 里已经有同名文件（比如你自己写过 `product-manager.md`），`cp` 会覆盖。
-
-**安全做法**：先备份你自己的版本
-
-```bash
-mkdir -p ~/.claude/agents/_backup_$(date +%Y%m%d)
-cp ~/.claude/agents/*.md ~/.claude/agents/_backup_$(date +%Y%m%d)/
-```
-
-然后再 `cp agents/*.md ~/.claude/agents/`。不满意了可以从 backup 还原。
-
----
-
-## 升级到新版本
-
-```bash
-cd /your/clone/path/claude-standard-dev-team
-git pull
-bash scripts/install.sh
+```powershell
+# Windows
+$a = "$HOME\.claude\agents"
+'orchestrator','product-manager','software-architect','ui-designer','database-optimizer',
+'backend-architect','frontend-developer','devops-automator','testing-evidence-collector',
+'security-engineer','code-reviewer','reality-checker','technical-writer' | ForEach-Object {
+    Remove-Item "$a\$_.md" -Force -ErrorAction SilentlyContinue
+}
+Remove-Item "$HOME\.claude\commands\team-install.md","$HOME\.claude\commands\team-init.md" -Force -ErrorAction SilentlyContinue
 ```
 
 ---
 
 ## 常见问题
 
-### Q: 我必须把全部 13 个 .md 都装吗？
+### Q: 运行 /team-install 没反应，或 Claude Code 找不到命令
 
-A: 不必。但 `orchestrator`（总指挥）+ 规划层 2 + 实现层至少 1 个，是最小可用集合。完整 13 个 .md（12 团队成员 + 1 总指挥）能跑通完整 11 阶段。
+A: 先确认 `.claude/commands/team-install.md` 文件在仓库目录内存在，重启 Claude Code 让它重新加载命令列表。
 
-### Q: 这套 agent 会修改我的代码吗？
+### Q: PowerShell 报"脚本被禁止运行"
 
-A: 它们只在 Claude Code 的 agent 沙箱里跑。所有写文件操作都受 Claude Code 自身的权限模型约束——和你直接用 Claude Code 一样。
+A: 管理员 PowerShell 执行：`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
-### Q: 我可以改这些 agent 的 prompt 吗？
+### Q: 我已经有自己的 agent，会被覆盖吗？
 
-A: 当然，复制过去就是你的了。建议改之前先理解每个 agent 的职责边界（看 [WORKFLOW.md](WORKFLOW.md)），不要随便删除"打回机制"和"零容忍硬编码"那部分——那是踩过的坑总结出来的。
+A: 同名文件会被覆盖。安装前先备份：
+```bash
+cp ~/.claude/agents/*.md ~/.claude/agents/_backup/
+```
 
-### Q: 在 Claude Code 之外（比如 Cursor / Cline）能用吗？
+### Q: 在 Claude Code 之外（Cursor / Cline）能用吗？
 
-A: 不能。这套配置依赖 Claude Code 的 [Subagents 机制](https://docs.claude.com/en/docs/claude-code/sub-agents)，其他 IDE 没有这个能力。
+A: 不能。这套配置依赖 Claude Code 的 [Subagents 机制](https://docs.claude.com/en/docs/claude-code/sub-agents)，其他工具没有此能力。
 
 ### Q: 跑一次大概多少 token？
 
-A: 主对话本身消耗很低（几千 token），但 orchestrator 内部会派多个 agent，每个 agent 在独立 session 里跑，加起来一个完整中型项目大约 **50-200k token**（取决于复杂度）。具体看 Claude Code 的用量统计。
+A: 主对话消耗很低（几千 token）。orchestrator 派的子 agent 各自独立 session，完整中型项目合计约 **50-200k token**。
 
 ---
 
-有其他问题欢迎开 [Issue](https://github.com/xuanbingbingo/claude-standard-dev-team/issues)。
+有问题欢迎开 [Issue](https://github.com/xuanbingbingo/claude-standard-dev-team/issues)。

@@ -9,6 +9,8 @@ AGENTS_SRC="$REPO_DIR/agents"
 TEMPLATES_SRC="$REPO_DIR/templates/memory"
 AGENTS_DEST="$HOME/.claude/agents"
 MEMORY_DEST="$HOME/.claude/team-memory/patterns"
+COMMANDS_SRC="$REPO_DIR/.claude/commands"
+COMMANDS_DEST="$HOME/.claude/commands"
 
 if [ ! -d "$AGENTS_SRC" ]; then
   echo "❌ 找不到 agents 目录：$AGENTS_SRC" >&2
@@ -43,16 +45,26 @@ for pattern in backend frontend contract qa security deployment; do
   fi
 done
 
+# 3. 注册全局 Claude Code 命令（让 /team-install 和 /team-init 全局可用）
+if [ -d "$COMMANDS_SRC" ]; then
+  mkdir -p "$COMMANDS_DEST"
+  cp "$COMMANDS_SRC/team-install.md" "$COMMANDS_DEST/"
+  cp "$COMMANDS_SRC/team-init.md" "$COMMANDS_DEST/"
+  echo "✅ 已注册全局命令 -> $COMMANDS_DEST"
+else
+  echo "  ⚠  跳过命令注册（.claude/commands/ 目录不存在）"
+fi
+
 echo ""
 echo "✅ 安装完成！"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "下一步：在你的项目目录里运行初始化"
+echo "后续操作全在 Claude Code 内完成："
 echo ""
-echo "  cd /你的项目目录"
-echo "  bash $REPO_DIR/scripts/team-init.sh"
+echo "  进入项目目录，打开 Claude Code，运行："
+echo "    /team-init"
 echo ""
-echo "初始化完成后，在 Claude Code 里说："
-echo "  使用标准团队开发 你的需求"
+echo "  初始化后说："
+echo "    使用标准团队开发 你的需求"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""

@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 # 安装标准 AI 开发团队（Windows PowerShell / PowerShell 7+）
 # 幂等：重复运行安全，已有记忆库内容不会被覆盖
 $ErrorActionPreference = 'Stop'
@@ -7,8 +7,10 @@ $ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoDir    = Split-Path -Parent $ScriptDir
 $AgentsSrc  = Join-Path $RepoDir 'agents'
 $TplSrc     = Join-Path $RepoDir 'templates\memory'
-$AgentsDest = Join-Path $HOME    '.claude\agents'
-$MemDest    = Join-Path $HOME    '.claude\team-memory\patterns'
+$AgentsDest  = Join-Path $HOME    '.claude\agents'
+$MemDest     = Join-Path $HOME    '.claude\team-memory\patterns'
+$CommandsSrc = Join-Path $RepoDir '.claude\commands'
+$CommandsDest= Join-Path $HOME    '.claude\commands'
 
 if (-not (Test-Path $AgentsSrc)) {
     Write-Host ''
@@ -44,16 +46,26 @@ foreach ($p in 'backend','frontend','contract','qa','security','deployment') {
     }
 }
 
+# 3. 注册全局 Claude Code 命令（让 /team-install 和 /team-init 全局可用）
+if (Test-Path $CommandsSrc) {
+    New-Item -ItemType Directory -Force -Path $CommandsDest | Out-Null
+    Copy-Item "$CommandsSrc\team-install.md" "$CommandsDest\" -Force
+    Copy-Item "$CommandsSrc\team-init.md"    "$CommandsDest\" -Force
+    Write-Host "✅ 已注册全局命令 -> $CommandsDest" -ForegroundColor Green
+} else {
+    Write-Host '  ⚠  跳过命令注册（.claude\commands\ 目录不存在）'
+}
+
 Write-Host ''
 Write-Host '✅ 安装完成！' -ForegroundColor Green
 Write-Host ''
-Write-Host '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-Write-Host '下一步：在你的项目目录里运行初始化'
+Write-Host '========================================='
+Write-Host '后续操作全在 Claude Code 内完成：'
 Write-Host ''
-Write-Host "  cd 你的项目目录"
-Write-Host "  pwsh `"$RepoDir\scripts\team-init.ps1`""
+Write-Host '  进入项目目录，打开 Claude Code，运行：'
+Write-Host '    /team-init' -ForegroundColor Yellow
 Write-Host ''
-Write-Host '初始化完成后，在 Claude Code 里说：'
-Write-Host '  使用标准团队开发 你的需求'
-Write-Host '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+Write-Host '  初始化后说：'
+Write-Host '    使用标准团队开发 你的需求' -ForegroundColor Yellow
+Write-Host '========================================='
 Write-Host ''

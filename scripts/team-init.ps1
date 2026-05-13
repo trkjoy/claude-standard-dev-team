@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 # 在当前目录初始化标准团队项目（Windows PowerShell / PowerShell 7+）
 # 交互式收集项目配置，生成即用的 CLAUDE.md，无需手动编辑
 # 幂等：已存在的文件不会被覆盖
@@ -94,7 +94,7 @@ foreach ($f in 'STATE.md','RETRY_LOG.md','DECISIONS.md','LEARNINGS.md') {
 Write-Host ''
 Write-Host '✅ 初始化完成！' -ForegroundColor Green
 Write-Host ''
-Write-Host '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+Write-Host '========================================='
 Write-Host '现在打开 Claude Code，在这个目录里输入：'
 Write-Host ''
 Write-Host '  使用标准团队开发 你的需求' -ForegroundColor Yellow
@@ -103,5 +103,5 @@ if ($TechStack) {
     Write-Host "  技术栈：$TechStack"
     Write-Host "  部署环境：$DeployEnv"
 }
-Write-Host '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+Write-Host '========================================='
 Write-Host ''
