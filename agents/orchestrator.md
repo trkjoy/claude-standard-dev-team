@@ -36,6 +36,7 @@ model: opus
 | Agent | 来源文件 | 职责 |
 |-------|---------|------|
 | `testing-evidence-collector` | testing-evidence-collector.md | 任务级截图QA，PASS/FAIL决策 |
+| `qa-automator` | qa-automator.md | 自动化测试生成（unit/integration/e2e），保障回归测试能力 |
 | `security-engineer` | security-engineer.md | 安全扫描 |
 | `code-reviewer` | code-reviewer.md | 代码规范review |
 | `reality-checker` | reality-checker.md | 最终上线前整体验收 |
@@ -158,8 +159,132 @@ model: opus
 ✅ 未发现问题的检查项：[列出]
 ```
 
-**有 Blocker → 打回对应 agent 修复 → 重新 audit**
 **无 Blocker → 汇报完成，等待用户指令**
+**有 Blocker 且用户未指示修复 → 汇报问题清单，等待用户指令**
+**有 Blocker 且用户说"修复"/"fix"/"帮我改" → 进入 Audit-Fix 流程（见下方）**
+
+---
+
+### Audit-Fix：Audit 发现 Blocker 后自动转 Dev-QA Loop（P2 闭环）
+
+**Step 1：生成修复任务条目**
+
+将 `docs/REVIEW_REPORT.md` 和 `docs/SECURITY_REPORT.md` 中所有 Blocker 项转写为任务条目，追加到对应 tasklist：
+
+- 前端相关问题（硬编码路径、CSS 变量、UI 逻辑）→ `project-tasks/frontend-tasklist.md`
+- 后端相关问题（接口逻辑、错误处理、契约偏差）→ `project-tasks/backend-tasklist.md`
+- 安全问题 → 按归属分别追加
+
+条目格式：
+```markdown
+### [ ] TASK-FIX-01：修复 [Blocker 简述]
+- 来源：docs/REVIEW_REPORT.md（或 SECURITY_REPORT.md）#[章节]
+- 问题：[具体描述 + 文件:行号]
+- 验收标准：[审查报告中对应的通过条件]
+```
+
+**Step 2：进入 Dev-QA Loop 修复**
+
+按正常 Phase 5（后端）/ Phase 6（前端）的 Dev-QA Loop 执行所有修复任务，重试规则与正常任务相同。
+
+**Step 3：修复完成后重跑 Audit**
+
+所有修复任务 PASS 后，重新执行 Audit-1 + Audit-2：
+- 若无新 Blocker → 汇报完成
+- 若仍有 Blocker → 重复本流程（最多 2 轮，超出则暂停等待用户介入）
+
+---
+
+## ► Hotfix 模式（线上 Bug 修复）
+
+> **触发方式**：用户说"修复线上 bug"、"hotfix"、"线上报错"、"生产环境问题"时进入，不走 Phase 0–11。
+> **前提**：项目已完成首次完整开发并上线，`docs/API_CONTRACT.md` 存在。
+
+### Hotfix-1：Bug 复现与定位
+
+收集信息（用户输入）：
+- Bug 现象描述
+- 复现路径（操作步骤）
+- 报错信息 / 截图
+
+**调用 `testing-evidence-collector`** 复现 bug：
+```
+- 按用户描述的路径操作
+- 截图固化失败状态，保存为 .claude/team-state/BUG_BASELINE.png
+- 输出：失败现象文字描述
+```
+
+根据失败现象定位归属（可多选）：
+- 页面渲染异常 / 交互无响应 → **前端**
+- 接口 4xx/5xx / 字段错误 → **后端**
+- 数据库查询报错 / 数据异常 → **DB**
+- 404 / 502 / 路径前缀丢失 → **部署**
+
+### Hotfix-2：修复（含 Dev-QA Loop）
+
+```
+STEP 1 - 调用对应 agent 修复（修复前必须读取 API_CONTRACT.md）：
+  前端问题 → frontend-developer（读 API_CONTRACT + DESIGN_SYSTEM）
+  后端问题 → backend-architect（读 API_CONTRACT + DB_SCHEMA）
+  DB 问题  → database-optimizer（读 DB_SCHEMA）
+  部署问题 → devops-automator（读 TECH_SPEC）
+
+STEP 2 - 调用 testing-evidence-collector 验证：
+  - 复现 bug 的路径是否已正常（对比 BUG_BASELINE）
+  - 同模块相邻功能回归（至少 3 条邻近路径）
+  产出：PASS 或 FAIL + 截图证据
+
+STEP 3 - 决策（最多重试 2 次）：
+  PASS → 继续 Hotfix-3
+  FAIL 且重试 < 2 → 打回对应 agent，附 QA 反馈
+  FAIL 且重试 = 2 → 暂停，生成卡点报告，等待用户介入
+```
+
+### Hotfix-3：增量代码审查
+
+**调用 `code-reviewer`（仅审查本次修复的 diff）**：
+```
+输入：git diff（仅本次修复变更）
+重点：
+  - 修复是否引入新 bug（副作用检查）
+  - 是否破坏 API_CONTRACT 中的接口定义
+  - 是否有安全风险（XSS / 注入等）
+若有 MUST FIX → 打回对应 agent → 重新验证
+```
+
+### Hotfix-4：热部署
+
+**调用 `devops-automator`**：
+```
+触发热部署（docker-compose pull + restart 或 CI/CD 流水线）
+执行部署路径前缀检查（规则同 Phase 9，必须通过）
+输出：部署成功确认
+```
+
+### Hotfix-5：补充回归测试 + 知识沉淀
+
+**调用 `qa-automator`**（为本次 bug 补充测试用例）：
+```
+输入：bug 现象描述 + 修复的接口/组件
+产出：在 tests/ 对应目录追加回归测试用例，确保此 bug 不再复现
+```
+
+将本次 bug 根因和修复方案写入 `.claude/team-state/RETRY_LOG.md`，并写回知识库（规则同 Phase 11.5）。
+
+### Hotfix 汇报格式
+
+```
+🔧 Hotfix 完成：{bug 简述}
+
+🐛 根因：[前端/后端/DB/部署] — [具体原因]
+🔨 修复：[文件:行号] — [修复内容一句话]
+🧪 验证：testing-evidence-collector PASS（附截图）
+📦 部署：devops-automator 热部署完成
+🔁 回归测试：qa-automator 已补充测试用例
+📚 沉淀：已写入知识库
+
+⚠️  影响范围：[若有其他受影响模块，列出并说明是否需要后续跟进]
+```
 
 ---
 
@@ -186,6 +311,7 @@ docs/
 project-tasks/
   backend-tasklist.md
   frontend-tasklist.md
+  test-tasklist.md
 ```
 
 ---
@@ -494,6 +620,41 @@ FOR 每个 project-tasks/frontend-tasklist.md 中的 [ ] 任务：
 
 ---
 
+## ► Phase 6.5：自动化测试生成
+
+**调用 `qa-automator`**
+
+```
+输入：
+  - 读取 docs/API_CONTRACT.md（接口定义）
+  - 读取 docs/PRD.md（验收标准）
+  - 读取 docs/TECH_SPEC.md（技术栈，决定测试框架）
+  - 读取 docs/DB_SCHEMA.md（数据结构，用于 fixture 准备）
+  - 读取 project-tasks/backend-tasklist.md + frontend-tasklist.md（确认实现范围）
+
+产出：
+  - tests/unit/           核心业务逻辑单元测试
+  - tests/integration/    API 接口集成测试（覆盖 API_CONTRACT 全部接口）
+  - tests/e2e/            用户核心旅程端到端测试（基于 PRD 验收标准）
+  - project-tasks/test-tasklist.md
+
+要求：
+  - 每个 API_CONTRACT 接口至少 1 个 happy path + 1 个错误路径测试
+  - 每条 PRD 验收标准至少 1 个对应 e2e 测试
+  - 测试可通过 npm test / pytest 单命令运行
+  - integration test 必须连接真实测试数据库，不得 mock
+
+完成标志：
+  - tests/ 目录存在，npm test / pytest 运行全绿
+  - project-tasks/test-tasklist.md 所有条目标 [x]
+```
+
+若测试运行失败，按以下规则处理：
+- **测试本身有 bug**（断言字段名、路径与 API_CONTRACT 不一致）→ 打回 qa-automator 修正，最多 2 次
+- **测试暴露实现 bug**（接口字段错误、UI 行为不符）→ 生成 TASK-FIX 条目追加到对应 tasklist，进入 Dev-QA Loop（Phase 5 / Phase 6）修复，修复后重跑测试
+
+---
+
 ## ► Phase 7：安全审查
 
 **Phase 7 前：读取安全知识库**
@@ -555,6 +716,7 @@ FOR 每个 project-tasks/frontend-tasklist.md 中的 [ ] 任务：
 完成标志：
   - 项目可通过 docker-compose up 启动
   - 部署路径前缀检查全部通过
+  - npm test / pytest 集成测试全绿（tests/integration/ 目录）
 ```
 
 ---
@@ -574,10 +736,11 @@ FOR 每个 project-tasks/frontend-tasklist.md 中的 [ ] 任务：
 判决规则：
   - 默认判决：NEEDS WORK（必须有压倒性证据才能 READY）
   - READY 条件：
-      ✅ 所有任务清单项均为 [x]
+      ✅ 所有任务清单项均为 [x]（含 test-tasklist.md）
       ✅ 无未解决的安全高危问题
       ✅ 用户核心流程截图可见且正常
       ✅ API_CONTRACT 中所有接口均有测试通过记录
+      ✅ npm test / pytest 运行全绿（integration + e2e）
 
 完成标志：reality-checker 输出 READY
 ```
@@ -663,6 +826,10 @@ FOR 每个 project-tasks/frontend-tasklist.md 中的 [ ] 任务：
 | 安全高危问题 | 对应实现 agent | 2次 |
 | REVIEW MUST FIX | 对应实现 agent | 2次 |
 | reality-checker NEEDS WORK | 对应 agent | 1次 |
+| **Phase 6.5 测试本身有 bug** | **qa-automator 修正** | **2次** |
+| **Phase 6.5 测试暴露实现 bug** | **对应实现 agent（走 Dev-QA Loop）** | **3次/任务** |
+| **Hotfix-2 修复验证 FAIL** | **对应实现 agent** | **2次** |
+| **Audit-Fix 重跑 Audit 仍有 Blocker** | **对应实现 agent（走 Dev-QA Loop）** | **2轮** |
 | 任何重试超限 | 暂停 → 向用户报告卡点 | — |
 
 ---
@@ -690,6 +857,7 @@ FOR 每个 project-tasks/frontend-tasklist.md 中的 [ ] 任务：
 🗄️  数据库：[表数量] 张表
 🔒 安全：[高危/中危/低危问题数]，高危问题已全部修复
 🧪 QA：所有任务通过 testing-evidence-collector 验证
+🔬 自动化测试：integration [n] 个用例全绿，e2e [n] 个场景全绿
 ✅ 验收：reality-checker 判决 READY
 📁 文档：README.md + API_DOC.md 已生成
 
