@@ -11,6 +11,7 @@
 - 错误表现: testing-evidence-collector 所有接口请求返回 404 或 Connection Refused
 - 解决方案: 第 2 次重试时拉 devops-automator 检查启动脚本和服务端口
 - 技术栈: 通用
+- 项目来源: 通用
 - 出现次数: 1
 - 最后更新: 2026-05-12
 ```

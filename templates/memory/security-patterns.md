@@ -11,6 +11,7 @@
 - 错误表现: security-engineer 发现跨服务 token 可被错误接受
 - 解决方案: JWT 验证必须同时校验 signature、issuer、audience 和过期时间
 - 技术栈: Node.js, Express.js
+- 项目来源: 通用
 - 出现次数: 1
 - 最后更新: 2026-05-12
 ```

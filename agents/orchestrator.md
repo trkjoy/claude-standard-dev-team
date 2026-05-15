@@ -331,9 +331,11 @@ project-tasks/
 
 ```
 STEP 0 - 读取用户级团队记忆：
-  1. 读取项目根目录 CLAUDE.md 中的"技术栈:"字段，得到 PROJECT_TECH_STACK。
+  1. 读取项目根目录 CLAUDE.md 中的 H1 标题得到 PROJECT_NAME；读取"技术栈:"字段得到 PROJECT_TECH_STACK。
   2. 若 ~/.claude/team-memory/patterns/backend-patterns.md 存在：
-       读取文件，筛选"技术栈:"与 PROJECT_TECH_STACK 任意关键词匹配的条目。
+       读取文件，筛选同时满足以下两个条件的条目：
+         - "技术栈:"与 PROJECT_TECH_STACK 任意关键词匹配
+         - "项目来源:"为"通用"或与 PROJECT_NAME 完全一致
        取出现次数最高前 5 条 + 最近 10 条，去重后最多 15 条。
        生成 BACKEND_MEMORY_HINT。
   3. 若 ~/.claude/team-memory/patterns/contract-patterns.md 存在：
@@ -416,11 +418,11 @@ ALL 任务 PASS 后：
 
 ```
 STEP 0 - 读取用户级团队记忆：
-  1. 复用 PROJECT_TECH_STACK。
+  1. 复用 PROJECT_NAME 和 PROJECT_TECH_STACK。
   2. 若 ~/.claude/team-memory/patterns/frontend-patterns.md 存在：
-       筛选技术栈匹配条目，生成 FRONTEND_MEMORY_HINT。
+       筛选技术栈匹配 AND (项目来源="通用" OR 项目来源=PROJECT_NAME) 的条目，生成 FRONTEND_MEMORY_HINT。
   3. 若 ~/.claude/team-memory/patterns/deployment-patterns.md 存在：
-       筛选技术栈匹配条目，生成 DEPLOYMENT_MEMORY_HINT。
+       按相同规则生成 DEPLOYMENT_MEMORY_HINT。
   4. 合并 PHASE6_MEMORY_HINT = FRONTEND_MEMORY_HINT + DEPLOYMENT_MEMORY_HINT。
   5. 若无匹配条目，PHASE6_MEMORY_HINT 为空，不阻塞 Phase 6。
 ```
@@ -498,7 +500,7 @@ FOR 每个 project-tasks/frontend-tasklist.md 中的 [ ] 任务：
 
 ```
 读取 ~/.claude/team-memory/patterns/security-patterns.md（若存在）。
-按 PROJECT_TECH_STACK 筛选匹配条目，生成 SECURITY_MEMORY_HINT。
+筛选技术栈匹配 AND (项目来源="通用" OR 项目来源=PROJECT_NAME) 的条目，生成 SECURITY_MEMORY_HINT。
 若 SECURITY_MEMORY_HINT 非空，将其作为 security-engineer 任务指令第一段。
 若文件不存在或无匹配条目，不阻塞安全审查。
 ```
@@ -623,6 +625,9 @@ FOR 每个 project-tasks/frontend-tasklist.md 中的 [ ] 任务：
      - 错误表现
      - 最终有效解决方案
      - 技术栈
+     - 项目来源：按以下规则判定：
+         * 解决方案与具体业务逻辑、项目自定义配置、特定域名/路径强绑定 → 填写 PROJECT_NAME
+         * 解决方案适用于同类技术栈的任意项目（如 JWT 校验、CORS、SQL 注入防范、分页参数规范）→ 填写"通用"
      - 出现次数
      - 最后更新
   2. 判断归属：

@@ -11,6 +11,7 @@
 - 错误表现: SPA 刷新子页面返回 404
 - 解决方案: nginx location 块必须包含 try_files $uri $uri/ /index.html
 - 技术栈: Nginx, React SPA
+- 项目来源: 通用
 - 出现次数: 1
 - 最后更新: 2026-05-12
 ```

@@ -11,6 +11,7 @@
 - 错误表现: QA 发现 POST /api/auth/login 返回 401 但 body 缺少 code 字段
 - 解决方案: 错误响应统一返回 code 和 message，并与 API_CONTRACT 保持一致
 - 技术栈: Express.js
+- 项目来源: 通用
 - 出现次数: 1
 - 最后更新: 2026-05-12
 ```
