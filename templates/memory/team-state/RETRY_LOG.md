@@ -1,6 +1,7 @@
 # Retry Log
 
-本文件由 orchestrator 在 Phase 5 / Phase 6 / Phase 7 / Phase 8 / Phase 10 失败打回时更新。
+**文件说明**：本文件由 orchestrator 在 Phase 5 / Phase 6 / Phase 7 / Phase 8 / Phase 10 失败打回时更新，追踪各任务的重试历史和最终结果。
+**格式说明**：每条记录以 `### [任务ID]` 开头，包含阶段、执行 Agent、尝试次数、失败原因、重试策略及最终结果。
 
 ## 记录格式
 

@@ -1,9 +1,9 @@
 # 后端实现错误模式库
 
-orchestrator 在 Phase 5 开始前读取本文件，按技术栈过滤后注入到 backend-architect 的任务指令。
-项目最终 READY 后，orchestrator 才能把已经验证有效的后端修复模式写回本文件。
+**文件说明**：orchestrator 在 Phase 5 开始前读取本文件，按技术栈过滤后注入到 backend-architect 的任务指令；项目最终 READY 后，orchestrator 才能把已验证有效的后端修复模式写回本文件。
+**格式说明**：每条记录以 `## [错误标题]` 开头，包含触发场景、错误表现、解决方案、技术栈、出现次数和最后更新时间。
 
-每条记录必须使用以下格式：
+## 记录示例
 
 ```markdown
 ## 错误响应缺少 code 字段

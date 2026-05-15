@@ -1,9 +1,9 @@
 # API/DB 契约设计陷阱库
 
-orchestrator 在 Phase 5 和 Phase 6 前读取本文件，按技术栈过滤后注入给实现 agent。
-契约类问题通常由 software-architect 在第 2 次重试时复查。
+**文件说明**：orchestrator 在 Phase 5 和 Phase 6 前读取本文件，按技术栈过滤后注入给实现 agent；契约类问题通常由 software-architect 在第 2 次重试时复查。
+**格式说明**：每条记录以 `## [错误标题]` 开头，包含触发场景、错误表现、解决方案、技术栈、出现次数和最后更新时间。
 
-每条记录必须使用以下格式：
+## 记录示例
 
 ```markdown
 ## 分页参数类型不一致

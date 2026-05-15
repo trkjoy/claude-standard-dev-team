@@ -1,9 +1,9 @@
 # QA 验证失败模式库
 
-记录 testing-evidence-collector 反复发现的验证失败模式，供 orchestrator 提前预警。
-项目最终 READY 后，orchestrator 才能把已经验证有效的 QA 失败模式写回本文件。
+**文件说明**：记录 testing-evidence-collector 反复发现的验证失败模式，供 orchestrator 提前预警；项目最终 READY 后，orchestrator 才能把已验证有效的 QA 失败模式写回本文件。
+**格式说明**：每条记录以 `## [错误标题]` 开头，包含触发场景、错误表现、解决方案、技术栈、出现次数和最后更新时间。
 
-每条记录必须使用以下格式：
+## 记录示例
 
 ```markdown
 ## 服务未启动导致全部 404
