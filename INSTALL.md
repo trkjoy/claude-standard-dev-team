@@ -100,20 +100,86 @@ cp agents/product-manager.md ~/.claude/agents/
 
 ---
 
-## 升级
+## 升级（版本更新）
+
+### 1. 什么时候需要升级
+
+作者在 GitHub 持续迭代推送新版本（agent 规则调整、新增 agent、bug 修复、知识库模板优化）。当你看到仓库有新 commit 或新 tag 时，建议同步本地。
+
+### 2. 查看当前版本
+
+```bash
+# 在仓库目录查看版本号
+cat VERSION
+
+# 或查看最近 5 次提交
+git log --oneline -5
+```
+
+### 3. 三种升级方式（与安装方式对应）
+
+**方式一：Claude Code 内升级（推荐）**
+
+```bash
+# 1. 进入克隆的仓库目录
+cd /path/to/claude-standard-dev-team    # Mac/Linux/WSL
+cd C:\path\to\claude-standard-dev-team  # Windows
+
+# 2. 拉取最新代码
+git pull
+
+# 3. 在当前目录打开 Claude Code
+claude .
+
+# 4. 在 Claude Code 内运行
+/team-install
+```
+
+**方式二：脚本升级**
 
 ```bash
 # Mac/Linux/WSL
 cd /path/to/claude-standard-dev-team && git pull && bash scripts/install.sh
-
-# Windows
-cd C:\path\to\claude-standard-dev-team; git pull; pwsh .\scripts\install.ps1
-
-# 或在 Claude Code 内（进入仓库目录后）
-/team-install
 ```
 
-升级不影响已有知识库内容（幂等）。
+```powershell
+# Windows
+cd C:\path\to\claude-standard-dev-team; git pull; pwsh .\scripts\install.ps1
+```
+
+**方式三：手动升级（只更新部分 agent）**
+
+```bash
+git pull
+cp agents/orchestrator.md ~/.claude/agents/
+# 只复制你需要更新的 agent，其他保持不变
+```
+
+### 4. 升级不影响什么（幂等保证）
+
+以下内容**不会**被升级流程覆盖或清空：
+
+- 项目目录里的 `CLAUDE.md`（`/team-init` 生成的项目配置）
+- 项目目录里的 `.claude/team-state/`（`STATE.md`、`RETRY_LOG.md`、`DECISIONS.md`、`LEARNINGS.md`）
+- 知识库已有内容（`~/.claude/team-memory/patterns/` 下的累积条目）
+
+升级只刷新 `~/.claude/agents/` 和 `~/.claude/commands/` 里的 agent 规则与全局命令。
+
+### 5. 升级后验证生效
+
+1. 重启 Claude Code（关闭后重新 `claude .`），确保命令列表重新加载
+2. 在 Claude Code 里输入 `/`，确认 `/team-install`、`/team-init` 在命令列表中
+3. （可选）确认 agent 文件已更新：
+
+```bash
+# Mac/Linux/WSL
+cat ~/.claude/agents/orchestrator.md | head -5
+```
+
+```powershell
+# Windows
+Get-Content "$HOME\.claude\agents\orchestrator.md" -TotalCount 5
+```
 
 ---
 
@@ -174,6 +240,33 @@ A: 不能。这套配置依赖 Claude Code 的 [Subagents 机制](https://docs.c
 ### Q: 跑一次大概多少 token？
 
 A: 主对话消耗很低（几千 token）。orchestrator 派的子 agent 各自独立 session，完整中型项目合计约 **50-200k token**。
+
+### Q: 忘了仓库克隆在哪，怎么重新拉取更新？
+
+A: 重新克隆后直接运行安装命令，效果等同于升级（幂等）：
+```bash
+git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+cd claude-standard-dev-team
+bash scripts/install.sh  # 或在 Claude Code 内运行 /team-install
+```
+
+### Q: 升级后 agent 行为变了，如何回滚到旧版本？
+
+A: 用 git checkout 切到指定 tag 或 commit，再重新安装：
+```bash
+git log --oneline    # 找到旧版本的 commit hash 或 tag
+git checkout v1.0.2  # 换成你要回滚的版本号
+bash scripts/install.sh
+```
+
+### Q: git pull 时提示冲突怎么办？
+
+A: 本地一般不应该修改仓库里的文件。直接强制重置为远端最新版本：
+```bash
+git fetch origin
+git reset --hard origin/main
+bash scripts/install.sh
+```
 
 ---
 
