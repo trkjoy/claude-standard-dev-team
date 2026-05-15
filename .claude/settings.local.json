@@ -21,7 +21,9 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:hermes-agent.nousresearch.com)",
-      "PowerShell(. \"D:\\\\mcp\\\\claude-standard-dev-team\\\\scripts\\\\install.ps1\" 2>&1)"
+      "PowerShell(. \"D:\\\\mcp\\\\claude-standard-dev-team\\\\scripts\\\\install.ps1\" 2>&1)",
+      "PowerShell(Out-File *)",
+      "PowerShell(git add *)"
     ]
   }
 }
