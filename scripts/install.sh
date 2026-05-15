@@ -18,9 +18,20 @@ if [ ! -d "$AGENTS_SRC" ]; then
   exit 1
 fi
 
-# ─── 平台选择 ─────────────────────────────────────────────────────────────────
+# ─── 参数解析 ────────────────────────────────────────────────────────────────
+# 位置参数：
+#   $1 = PLATFORM  (claude / hermes / openclaw / codex / gemini)
+#   $2 = KB_MODE   (1=跳过 / 2=合并 / 3=覆盖，默认 1)
 
 PLATFORM="${1:-}"
+KB_MODE="${2:-1}"
+
+case "$KB_MODE" in
+  1|2|3) ;;
+  *) echo "❌ 无效的 KB_MODE：$KB_MODE（仅允许 1/2/3）" >&2; exit 1 ;;
+esac
+
+# ─── 平台选择 ─────────────────────────────────────────────────────────────────
 
 if [ -z "$PLATFORM" ]; then
   echo ""
@@ -62,7 +73,8 @@ esac
 INSTALLED_VERSION=""
 [ -f "$VER_FILE" ] && INSTALLED_VERSION="$(cat "$VER_FILE" | tr -d '[:space:]')"
 
-if [ "$REPO_VERSION" = "$INSTALLED_VERSION" ]; then
+# KB_MODE 2/3 时强制重跑知识库处理，不因版本相同而短路
+if [ "$REPO_VERSION" = "$INSTALLED_VERSION" ] && [ "$KB_MODE" = "1" ]; then
   echo ""
   echo "✅ [$PLATFORM] 已是最新版本 v$REPO_VERSION，无需重新安装"
   echo ""
@@ -75,6 +87,13 @@ if [ -n "$INSTALLED_VERSION" ]; then
 else
   echo "📦 正在安装标准 AI 开发团队 v$REPO_VERSION → $PLATFORM..."
 fi
+
+# 输出 KB_MODE 提示
+case "$KB_MODE" in
+  1) echo "📚 知识库模式：跳过（已存在则保留历史，默认）" ;;
+  2) echo "📚 知识库模式：合并（新内容追加到历史末尾）"   ;;
+  3) echo "📚 知识库模式：覆盖（用模板完全替换已有文件）" ;;
+esac
 echo ""
 
 # ─── 工具函数 ─────────────────────────────────────────────────────────────────
@@ -113,6 +132,73 @@ _write_version() {
   printf '%s' "$REPO_VERSION" > "$VER_FILE"
 }
 
+# 提取模板中 "## 记录示例" 之后的整段（含该标题）
+_extract_example_section() {
+  awk '
+    BEGIN { found=0 }
+    /^##[[:space:]]+记录示例[[:space:]]*$/ { found=1 }
+    found { print }
+  ' "$1"
+}
+
+# 提取一段 markdown 中所有 `^## 标题`（去掉 "##" 和首尾空白），跳过 "## 记录示例"
+# 用法： _extract_titles <file>
+_extract_titles() {
+  awk '
+    /^##[[:space:]]+/ {
+      line=$0
+      sub(/^##[[:space:]]+/, "", line)
+      sub(/[[:space:]]+$/, "", line)
+      if (line != "记录示例") print line
+    }
+  ' "$1"
+}
+
+# 合并：将模板示例条目追加到已有文件末尾（按标题去重）
+_merge_pattern_file() {
+  local src="$1"
+  local dest="$2"
+  local base
+  base="$(basename "$dest")"
+
+  local tmp_section tmp_template_titles tmp_existing_titles
+  tmp_section="$(mktemp)"
+  tmp_template_titles="$(mktemp)"
+  tmp_existing_titles="$(mktemp)"
+  trap 'rm -f "$tmp_section" "$tmp_template_titles" "$tmp_existing_titles"' RETURN
+
+  _extract_example_section "$src" > "$tmp_section"
+
+  if [ ! -s "$tmp_section" ]; then
+    echo "  ⚠  合并跳过（模板无 ## 记录示例 章节）：$base"
+    return
+  fi
+
+  _extract_titles "$tmp_section" > "$tmp_template_titles"
+  _extract_titles "$dest"        > "$tmp_existing_titles"
+
+  # 计算模板中存在但目标中不存在的标题数量
+  local new_count
+  new_count="$(grep -Fxv -f "$tmp_existing_titles" "$tmp_template_titles" 2>/dev/null | grep -c . || true)"
+
+  if [ -z "$new_count" ] || [ "$new_count" -eq 0 ]; then
+    echo "  ⚠  合并跳过（条目已存在）：$base"
+    return
+  fi
+
+  # 在追加前确保目标文件末尾有空行分隔
+  if [ -s "$dest" ]; then
+    # 若目标文件末尾不是换行，先补一个
+    [ -z "$(tail -c1 "$dest")" ] || printf '\n' >> "$dest"
+    printf '\n' >> "$dest"
+  fi
+  cat "$tmp_section" >> "$dest"
+  # 确保文件以换行结束
+  [ -z "$(tail -c1 "$dest")" ] || printf '\n' >> "$dest"
+
+  echo "  ✅ 合并：$base（新增 $new_count 条标题）"
+}
+
 # ─── Claude Code 安装 ────────────────────────────────────────────────────────
 
 install_claude() {
@@ -127,18 +213,35 @@ install_claude() {
   cnt="$(find "$AGENTS_SRC" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')"
   echo "✅ 已安装 $cnt 个 agent -> $AGENTS_DEST"
 
-  # 2. 用户级知识库（已存在则跳过，保留历史积累）
+  # 2. 用户级知识库（行为由 KB_MODE 决定）
   mkdir -p "$MEMORY_DEST"
   for p in backend frontend contract qa security deployment; do
     local src="$TEMPLATES_SRC/${p}-patterns.md"
     local dest="$MEMORY_DEST/${p}-patterns.md"
     if [ ! -f "$src" ]; then echo "❌ 模板文件缺失：$src" >&2; exit 1; fi
-    if [ -f "$dest" ]; then
-      echo "  ⏭  跳过（已存在）：${p}-patterns.md"
-    else
-      cp "$src" "$dest"
-      echo "  ✅ 初始化：${p}-patterns.md"
-    fi
+
+    case "$KB_MODE" in
+      1)
+        if [ -f "$dest" ]; then
+          echo "  ⏭  跳过（已存在）：${p}-patterns.md"
+        else
+          cp "$src" "$dest"
+          echo "  ✅ 初始化：${p}-patterns.md"
+        fi
+        ;;
+      2)
+        if [ -f "$dest" ]; then
+          _merge_pattern_file "$src" "$dest"
+        else
+          cp "$src" "$dest"
+          echo "  ✅ 初始化：${p}-patterns.md"
+        fi
+        ;;
+      3)
+        cp "$src" "$dest"
+        echo "  ✅ 覆盖：${p}-patterns.md"
+        ;;
+    esac
   done
 
   # 3. 全局命令

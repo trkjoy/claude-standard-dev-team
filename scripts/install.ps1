@@ -19,9 +19,20 @@ if (-not (Test-Path $AgentsSrc)) {
     exit 1
 }
 
-# ─── 平台选择 ─────────────────────────────────────────────────────────────────
+# ─── 参数解析 ────────────────────────────────────────────────────────────────
+# 位置参数：
+#   $args[0] = Platform     (claude / hermes / openclaw / codex / gemini)
+#   $args[1] = KbMode       (1=跳过 / 2=合并 / 3=覆盖，默认 1)
 
 $Platform = if ($args.Count -gt 0) { $args[0] } else { '' }
+$KbMode   = if ($args.Count -gt 1) { [string]$args[1] } else { '1' }
+
+if ($KbMode -notin @('1','2','3')) {
+    Write-Host "无效的 KbMode：$KbMode（仅允许 1/2/3）" -ForegroundColor Red
+    exit 1
+}
+
+# ─── 平台选择 ─────────────────────────────────────────────────────────────────
 
 if (-not $Platform) {
     Write-Host ''
@@ -67,7 +78,8 @@ else {
 
 $InstalledVersion = if (Test-Path $VerFile) { (Get-Content $VerFile -Raw).Trim() } else { '' }
 
-if ($RepoVersion -eq $InstalledVersion) {
+# KbMode 2/3 时强制重跑知识库处理，不因版本相同而短路
+if ($RepoVersion -eq $InstalledVersion -and $KbMode -eq '1') {
     Write-Host ''
     Write-Host "[$Platform] 已是最新版本 v$RepoVersion，无需重新安装" -ForegroundColor Green
     Write-Host ''
@@ -79,6 +91,13 @@ if ($InstalledVersion) {
     Write-Host "[$Platform] 版本更新：v$InstalledVersion -> v$RepoVersion" -ForegroundColor Yellow
 } else {
     Write-Host "正在安装标准 AI 开发团队 v$RepoVersion -> $Platform..." -ForegroundColor Cyan
+}
+
+# 输出 KbMode 提示
+switch ($KbMode) {
+    '1' { Write-Host "知识库模式：跳过（已存在则保留历史，默认）" -ForegroundColor Cyan }
+    '2' { Write-Host "知识库模式：合并（新内容追加到历史末尾）"   -ForegroundColor Cyan }
+    '3' { Write-Host "知识库模式：覆盖（用模板完全替换已有文件）" -ForegroundColor Cyan }
 }
 Write-Host ''
 
@@ -134,6 +153,65 @@ function Write-VersionFile {
     $RepoVersion | Out-File -FilePath $VerFile -Encoding utf8 -NoNewline
 }
 
+# 提取模板文件中 "## 记录示例" 之后的全部内容（含该标题）
+function Get-TemplateExampleSection([string]$TemplatePath) {
+    $lines   = Get-Content $TemplatePath -Encoding UTF8
+    $idx     = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^##\s+记录示例\s*$') { $idx = $i; break }
+    }
+    if ($idx -lt 0) { return '' }
+    return ($lines[$idx..($lines.Count - 1)] -join "`n")
+}
+
+# 从一段 markdown 文本中提取所有 `^## 标题` 行（去掉 "##" 和首尾空白）
+# 用于判断条目是否已存在
+function Get-EntryTitles([string]$Text) {
+    $titles = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in ($Text -split "`r?`n")) {
+        # 跳过模板自身的 "## 记录示例" 元标题
+        if ($line -match '^##\s+(.+?)\s*$' -and $line -notmatch '^##\s+记录示例\s*$') {
+            $titles.Add($Matches[1].Trim())
+        }
+    }
+    return ,$titles
+}
+
+# 合并：将模板示例条目追加到已有文件末尾（跳过已存在的标题）
+# 模板中代码块包裹的示例条目（```markdown ... ```）也会被解析其中的 `## 标题`
+function Merge-PatternFile([string]$SrcTemplate, [string]$DestFile) {
+    $section = Get-TemplateExampleSection $SrcTemplate
+    if (-not $section) {
+        Write-Host "  合并跳过（模板无 ## 记录示例 章节）：$(Split-Path $DestFile -Leaf)" -ForegroundColor Yellow
+        return
+    }
+
+    $destContent = Get-Content $DestFile -Raw -Encoding UTF8
+    if ($null -eq $destContent) { $destContent = '' }
+
+    # 提取目标文件已存在的所有 `## 标题`（包括代码块内的示例，避免重复合并）
+    $existingTitles = Get-EntryTitles $destContent
+    # 提取模板示例段中所有 `## 标题`（不含 "## 记录示例" 元标题）
+    $templateTitles = Get-EntryTitles $section
+
+    # 判断是否所有模板条目都已存在
+    $newTitles = @($templateTitles | Where-Object { $existingTitles -notcontains $_ })
+
+    if ($newTitles.Count -eq 0) {
+        Write-Host "  合并跳过（条目已存在）：$(Split-Path $DestFile -Leaf)" -ForegroundColor Yellow
+        return
+    }
+
+    # 追加模板的 "## 记录示例" 整段到目标文件末尾
+    # （目标文件可能已经包含或不含 "## 记录示例" 标题，统一以模板段落整体追加，
+    #   PowerShell 端简化实现：以模板示例整段为追加单元，靠标题去重避免重复运行造成累积）
+    $separator = if ($destContent.TrimEnd().Length -gt 0) { "`n`n" } else { '' }
+    $newContent = $destContent.TrimEnd() + $separator + $section.TrimEnd() + "`n"
+
+    [System.IO.File]::WriteAllText($DestFile, $newContent, [System.Text.UTF8Encoding]::new($false))
+    Write-Host "  合并：$(Split-Path $DestFile -Leaf)（新增 $($newTitles.Count) 条标题）" -ForegroundColor Green
+}
+
 # ─── Claude Code 安装 ────────────────────────────────────────────────────────
 
 function Install-Claude {
@@ -147,7 +225,7 @@ function Install-Claude {
     $cnt = (Get-ChildItem (Join-Path $AgentsDest '*.md')).Count
     Write-Host "已安装 $cnt 个 agent -> $AgentsDest" -ForegroundColor Green
 
-    # 2. 用户级知识库（已存在则跳过，保留历史积累）
+    # 2. 用户级知识库（行为由 KbMode 决定）
     New-Item -ItemType Directory -Force -Path $MemDest | Out-Null
     foreach ($p in 'backend','frontend','contract','qa','security','deployment') {
         $src  = Join-Path $TplSrc  "${p}-patterns.md"
@@ -155,11 +233,27 @@ function Install-Claude {
         if (-not (Test-Path $src)) {
             Write-Host "模板文件缺失：$src" -ForegroundColor Red; exit 1
         }
-        if (Test-Path $dest) {
-            Write-Host "  跳过（已存在）：${p}-patterns.md"
-        } else {
-            Copy-Item $src $dest
-            Write-Host "  初始化：${p}-patterns.md" -ForegroundColor Green
+        switch ($KbMode) {
+            '1' {
+                if (Test-Path $dest) {
+                    Write-Host "  跳过（已存在）：${p}-patterns.md"
+                } else {
+                    Copy-Item $src $dest
+                    Write-Host "  初始化：${p}-patterns.md" -ForegroundColor Green
+                }
+            }
+            '2' {
+                if (Test-Path $dest) {
+                    Merge-PatternFile $src $dest
+                } else {
+                    Copy-Item $src $dest
+                    Write-Host "  初始化：${p}-patterns.md" -ForegroundColor Green
+                }
+            }
+            '3' {
+                Copy-Item $src $dest -Force
+                Write-Host "  覆盖：${p}-patterns.md" -ForegroundColor Green
+            }
         }
     }
 
