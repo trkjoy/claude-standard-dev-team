@@ -181,12 +181,16 @@ FOR 每个任务：
     - 传入：需求描述 + 设计文档（若有）+ 相关契约/代码 + 验收标准
     - 明确告知验收标准
 
-  STEP B - 验证：
+  STEP B - agent 完成后先调用 /verification-before-completion skill：
+    要求对应 agent 在声明完成前运行验证命令，提供实际输出作为证据
+    禁止仅凭主观判断报告"已完成"
+
+  STEP C - 验证：
     有 UI 变更 / API 实现 / Bug 修复 → 调用 testing-evidence-collector
     纯文档 / 纯配置 / 纯设计规范 → 由 orchestrator 对照验收标准检查
     输出：PASS 或 FAIL + 原因
 
-  STEP C - 决策：
+  STEP D - 决策：
     PASS → 标记完成，进入下一任务（或等待并行批次全部完成）
     FAIL 且重试次数 < 2 → 将失败原因反馈给对应 agent，重试
     FAIL 且重试次数 >= 2 → 暂停，向用户报告卡点，等待指示
@@ -293,14 +297,22 @@ project-tasks/
 
 **逐任务执行**，每个任务：
 ```
-STEP 1 - 调用 backend-architect：
-  输入：PHASE5_MEMORY_HINT（若有）+ API_CONTRACT.md + DB_SCHEMA.md + 任务描述
-  要求：严格按契约实现，路径/方法/字段名不得偏差
+STEP 0 - 调用 /test-driven-development skill：
+  先写覆盖该接口的失败测试（RED），再交给 backend-architect 实现（GREEN），最后重构
+  输入：任务描述 + API_CONTRACT.md 中该接口定义
+  产出：tests/ 下对应测试文件（初始为 RED 状态）
 
-STEP 2 - 调用 testing-evidence-collector 验证：
+STEP 1 - 调用 backend-architect：
+  输入：PHASE5_MEMORY_HINT（若有）+ API_CONTRACT.md + DB_SCHEMA.md + 任务描述 + STEP 0 产出的测试文件
+  要求：严格按契约实现，路径/方法/字段名不得偏差；实现完成后必须通过 STEP 0 的测试
+
+STEP 2 - 调用 /verification-before-completion skill：
+  在声明实现完成前，运行测试并确认全绿，不得仅凭主观判断报告 PASS
+
+STEP 3 - 调用 testing-evidence-collector 验证：
   验证：路径、返回字段名、错误码是否与契约一致
 
-STEP 3 - 决策：
+STEP 4 - 决策：
   PASS → 标记 [x]，进入下一任务
   FAIL（第1次）→ 查知识库匹配，打回 backend-architect + QA 反馈
   FAIL（第2次）→ 按失败关键词分流（字段问题→software-architect复查；
@@ -316,15 +328,24 @@ STEP 3 - 决策：
 
 **逐任务执行**，每个任务：
 ```
+STEP 0 - 调用 /test-driven-development skill：
+  先写覆盖该组件/页面核心交互的失败测试（RED），再交给 frontend-developer 实现（GREEN）
+  输入：任务描述 + API_CONTRACT.md 中调用的接口定义 + PRD 验收标准
+  产出：tests/ 下对应测试文件（初始为 RED 状态）
+
 STEP 1 - 调用 frontend-developer：
   输入：PHASE6_MEMORY_HINT（若有）+ API_CONTRACT.md + DESIGN_SYSTEM.md
-        + TECH_SPEC.md + PRD.md + 任务描述
+        + TECH_SPEC.md + PRD.md + 任务描述 + STEP 0 产出的测试文件
   要求：所有颜色/字体/间距必须使用 CSS 变量，不得硬编码；API 路径不得硬编码
+        实现完成后必须通过 STEP 0 的测试
 
-STEP 2 - 调用 testing-evidence-collector 验证：
+STEP 2 - 调用 /verification-before-completion skill：
+  在声明实现完成前，运行测试并截图确认，不得仅凭主观判断报告 PASS
+
+STEP 3 - 调用 testing-evidence-collector 验证：
   验证：UI 截图、API 字段名、CSS 变量使用、表单处理
 
-STEP 3 - 决策：同 Phase 5 逻辑，分流规则：
+STEP 4 - 决策：同 Phase 5 逻辑，分流规则：
   路径硬编码 → 读 TECH_SPEC 打回
   CSS 硬编码 → 读 DESIGN_SYSTEM 打回
   字段问题 → software-architect 复查
@@ -469,9 +490,16 @@ STEP 3 - 修复完成后重跑 Audit-1 + Audit-2（最多 2 轮）
 
 ### Hotfix-1：Bug 复现与定位
 
-**调用 `testing-evidence-collector`** 复现 bug，截图固化失败状态。
+**调用 `testing-evidence-collector`** 复现 bug，截图固化失败状态（保存为 `.claude/team-state/BUG_BASELINE.png`）。
 
-根据失败现象定位归属：
+**调用 `/systematic-debugging` skill**：
+```
+输入：bug 现象描述 + 复现截图 + 相关日志
+目标：系统化定位根因，而非凭直觉猜测
+产出：根因假设 + 验证方式 + 影响范围评估
+```
+
+根据定位结论判定归属：
 - 页面渲染异常 / 交互无响应 → **前端**
 - 接口 4xx/5xx / 字段错误 → **后端**
 - 数据库报错 / 数据异常 → **DB**
@@ -480,12 +508,22 @@ STEP 3 - 修复完成后重跑 Audit-1 + Audit-2（最多 2 轮）
 ### Hotfix-2：修复（Dev-QA Loop，最多 2 次重试）
 
 ```
-调用对应 agent（必须先读 API_CONTRACT.md）：
+STEP 0 - 调用 /test-driven-development skill：
+  先写一个能精确复现此 bug 的失败测试（RED）
+  输入：Hotfix-1 定位的根因 + BUG_BASELINE
+  产出：可复现 bug 的失败测试（确认 RED 后才进入 STEP 1）
+
+STEP 1 - 调用对应 agent 修复（必须先读 API_CONTRACT.md）：
   前端 → frontend-developer；后端 → backend-architect
   DB   → database-optimizer；部署 → devops-automator
+  要求：修复完成后 STEP 0 的测试必须变为 GREEN
 
-调用 testing-evidence-collector 验证（对比 BUG_BASELINE + 3 条邻近路径回归）
-PASS → 继续；FAIL 且重试 < 2 → 打回；FAIL 且重试 = 2 → 暂停等用户
+STEP 2 - 调用 /verification-before-completion skill：
+  运行 STEP 0 测试 + 相关回归测试，确认全绿，截图存档
+
+STEP 3 - 调用 testing-evidence-collector 验证：
+  对比 BUG_BASELINE + 3 条邻近路径回归
+  PASS → 继续；FAIL 且重试 < 2 → 打回；FAIL 且重试 = 2 → 暂停等用户
 ```
 
 ### Hotfix-3：增量代码审查
