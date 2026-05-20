@@ -26,7 +26,8 @@
       "PowerShell(git add *)",
       "PowerShell(Test-Path *)",
       "PowerShell(Get-FileHash *)",
-      "PowerShell(Copy-Item *)"
+      "PowerShell(Copy-Item *)",
+      "PowerShell(git *)"
     ]
   }
 }
