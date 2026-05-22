@@ -27,7 +27,17 @@
       "PowerShell(Test-Path *)",
       "PowerShell(Get-FileHash *)",
       "PowerShell(Copy-Item *)",
-      "PowerShell(git *)"
+      "PowerShell(git *)",
+      "PowerShell(git -C $repo diff --stat)",
+      "PowerShell(git -C $repo log --oneline -3)",
+      "PowerShell($repo=\"D:\\\\mcp\\\\claude-standard-dev-team\")",
+      "PowerShell(git -C $repo status --short)",
+      "PowerShell(git -C $repo tag v1.0.7)",
+      "PowerShell(git -C $repo tag)",
+      "PowerShell(git -C $repo show v1.0.7 --no-patch --oneline 2>$null)",
+      "PowerShell(git -C $repo push origin main --tags)",
+      "PowerShell(git -C $repo status -sb)",
+      "PowerShell(if \\($?\\) { \"? push �ɹ�\" } else { \"? push ʧ��\" })"
     ]
   }
 }
