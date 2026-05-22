@@ -116,7 +116,24 @@ cat VERSION
 git log --oneline -5
 ```
 
-### 3. 三种升级方式（与安装方式对应）
+### 3. 升级方式
+
+**方式零：`/team-update`（推荐，唯一会同步项目 CLAUDE.md 的方式）**
+
+进入要升级的项目目录，在 Claude Code 内运行：
+
+```
+/team-update            # 升级到仓库最新版
+/team-update 1.0.7      # 升级到指定版本（也可用于回滚）
+```
+
+它会一次性刷新全局 13 个 agent，并把**当前项目** CLAUDE.md 的团队配置段落同步到目标版本（保留你的技术栈/部署环境字段）。
+
+> 首次使用前，需先用下面任一方式 `git pull && /team-install`，把 `/team-update` 注册到全局命令。
+
+下面三种方式只刷新全局 agents，**不会**更新项目 CLAUDE.md：
+
+#### 三种全局升级方式（与安装方式对应）
 
 **方式一：Claude Code 内升级（推荐）**
 

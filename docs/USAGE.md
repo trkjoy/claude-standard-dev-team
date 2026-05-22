@@ -215,6 +215,8 @@ $agents = "$HOME\.claude\agents"
 | 现象 | 原因 | 解决 |
 |---|---|---|
 | Claude Code 没有调用 orchestrator，直接开始写代码 | agent 文件未被加载 | 确认文件在 `~/.claude/agents/`，重启 Claude Code |
+| 报错 `orchestrator ran as a subagent and can't dispatch further agents` | orchestrator 被错误地用 Task 启动为 subagent；Claude Code 不支持 subagent 嵌套派发 | 这是正确行为：主会话应**亲自担任 orchestrator**（读取 `~/.claude/agents/orchestrator.md` 作为手册，自己用 Task 派发下游），而不是 Task 启动 orchestrator 本身。确认已升级到 v1.0.7+ 并重启 Claude Code |
+| orchestrator 自己读代码/写文件，从不派发下游 agent | 同上——它作为 subagent 无法派发，于是退化成自己硬扛 | 升级到 v1.0.7+；让主会话亲自担任 orchestrator |
 | PowerShell 报"脚本被禁止运行" | ExecutionPolicy 限制 | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
 | 某 Phase 卡住超过 3 次重试 | 需要人工介入 | orchestrator 会暂停并展示卡点报告，处理后输入"继续" |
 | 记忆库没有内容（patterns 文件为空） | 正常，首次使用 | 记忆库只在 Phase 11.5 写回（reality-checker READY 后） |

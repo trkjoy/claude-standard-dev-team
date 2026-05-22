@@ -105,13 +105,14 @@ foreach ($f in 'backend','frontend','contract','qa','security','deployment') {
 }
 ```
 
-### Step 5 — 注册全局命令（让 /team-install 和 /team-init 在所有项目可用）
+### Step 5 — 注册全局命令（让 /team-install、/team-init、/team-update 在所有项目可用）
 
 Mac/Linux/WSL：
 ```bash
 mkdir -p ~/.claude/commands
 cp "$REPO_DIR/.claude/commands/team-install.md" ~/.claude/commands/
 cp "$REPO_DIR/.claude/commands/team-init.md" ~/.claude/commands/
+cp "$REPO_DIR/.claude/commands/team-update.md" ~/.claude/commands/
 echo "✅ 全局命令已注册"
 ```
 
@@ -120,6 +121,7 @@ Windows：
 New-Item -ItemType Directory -Force "$HOME\.claude\commands" | Out-Null
 Copy-Item "$RepoDir\.claude\commands\team-install.md" "$HOME\.claude\commands\" -Force
 Copy-Item "$RepoDir\.claude\commands\team-init.md" "$HOME\.claude\commands\" -Force
+Copy-Item "$RepoDir\.claude\commands\team-update.md" "$HOME\.claude\commands\" -Force
 Write-Host "✅ 全局命令已注册"
 ```
 

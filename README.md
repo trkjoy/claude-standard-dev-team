@@ -10,9 +10,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blue.svg)](https://claude.com/claude-code)
-[![Version](https://img.shields.io/badge/Version-1.0.6-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.0.7-green.svg)](CHANGELOG.md)
 
-> 📢 **v1.0.6 修复**：orchestrator 在模糊指令下退化为"自己干活不派发"的问题。已使用 v1.0.5 及以下的同事请 `git pull && /team-install` 升级，详见 [CHANGELOG.md](CHANGELOG.md)。
+> 📢 **v1.0.7 架构级修复**：orchestrator 被作为 subagent 启动时无法派发下游团队（"can't dispatch further agents"）。现已明确——orchestrator 必须由 top-level 主会话亲自担任，只有下游 12 个 agent 才用 Task 派发。**强烈建议所有同事 `git pull && /team-install` 升级并重启 Claude Code**，详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 

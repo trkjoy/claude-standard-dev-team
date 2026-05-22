@@ -43,7 +43,13 @@ description: 在当前目录初始化标准团队项目（交互式收集配置�
 ## 团队配置
 
 本项目使用标准 AI 开发团队（13 agents）。
-在 Claude Code 中说"使用标准团队开发 你的需求"即可启动 orchestrator。
+
+**启动方式（重要）**：当用户说"使用标准团队开发 你的需求"时，**你（top-level 主会话）亲自担任 orchestrator 总指挥**：
+1. 读取 `~/.claude/agents/orchestrator.md` 作为调度操作手册
+2. 按其中的流程，用 `Task` 工具派发 product-manager、software-architect、backend-architect 等**下游专业 agent**
+3. **不要**用 `Task` 启动 `subagent_type="orchestrator"`——Claude Code 不支持 subagent 嵌套派发，那样 orchestrator 将无法派发下游、整个团队瘫痪
+
+一句话：**你就是 orchestrator 本人；只有下游 12 个 agent 才用 Task 派发。**
 
 ## 项目上下文
 
