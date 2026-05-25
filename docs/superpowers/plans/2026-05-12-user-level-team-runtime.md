@@ -982,7 +982,7 @@ Insert this block immediately before it:
 ### 方式零：安装脚本（推荐，含用户级记忆库）
 
 ```bash
-git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
 cd claude-standard-dev-team
 bash scripts/install.sh
 ```

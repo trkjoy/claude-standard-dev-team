@@ -31,7 +31,7 @@
 **第一步：全局安装（一次性）**
 
 ```bash
-git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
 cd claude-standard-dev-team
 bash scripts/install.sh
 ```
@@ -75,7 +75,7 @@ bash /path/to/claude-standard-dev-team/scripts/team-init.sh
 **第一步：全局安装（一次性）**
 
 ```powershell
-git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
 cd claude-standard-dev-team
 pwsh .\scripts\install.ps1
 ```
@@ -250,7 +250,7 @@ export OPENAI_API_KEY="your-key"
 只需克隆仓库获取 agent prompt 文件：
 
 ```bash
-git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
 ```
 
 ### 手动多步调用（示例）

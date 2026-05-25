@@ -946,7 +946,7 @@ Get-ChildItem "agents\*.md" | ForEach-Object {
 ### 方式零：使用安装脚本（推荐，含知识库初始化）
 
 ```bash
-git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
 cd claude-standard-dev-team
 bash scripts/install.sh
 ```

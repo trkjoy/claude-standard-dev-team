@@ -35,7 +35,7 @@ uname -s 2>/dev/null || echo Windows
   Mac/Linux/WSL：
   ```bash
   mkdir -p /tmp/csd-install
-  curl -sL https://github.com/xuanbingbingo/claude-standard-dev-team/archive/refs/heads/main.tar.gz \
+  curl -sL https://github.com/trkjoy/claude-standard-dev-team/archive/refs/heads/main.tar.gz \
     -o /tmp/csd-install/repo.tar.gz
   tar -xzf /tmp/csd-install/repo.tar.gz -C /tmp/csd-install/
   REPO_DIR="/tmp/csd-install/claude-standard-dev-team-main"
@@ -45,7 +45,7 @@ uname -s 2>/dev/null || echo Windows
   ```powershell
   $tmp = "$env:TEMP\csd-install"
   New-Item -ItemType Directory -Force $tmp | Out-Null
-  Invoke-WebRequest "https://github.com/xuanbingbingo/claude-standard-dev-team/archive/refs/heads/main.zip" `
+  Invoke-WebRequest "https://github.com/trkjoy/claude-standard-dev-team/archive/refs/heads/main.zip" `
     -OutFile "$tmp\repo.zip"
   Expand-Archive "$tmp\repo.zip" "$tmp" -Force
   $RepoDir = "$tmp\claude-standard-dev-team-main"

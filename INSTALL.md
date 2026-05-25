@@ -12,7 +12,7 @@
 
 ```bash
 # 1. 克隆仓库（仅首次）
-git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
 
 # 2. 在仓库目录打开 Claude Code
 cd claude-standard-dev-team
@@ -46,7 +46,7 @@ claude .
 **Mac / Linux / WSL：**
 
 ```bash
-git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
 cd claude-standard-dev-team
 bash scripts/install.sh
 ```
@@ -54,7 +54,7 @@ bash scripts/install.sh
 **Windows（PowerShell）：**
 
 ```powershell
-git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
 cd claude-standard-dev-team
 pwsh .\scripts\install.ps1
 # 或旧版 PowerShell：
@@ -262,7 +262,7 @@ A: 主对话消耗很低（几千 token）。orchestrator 派的子 agent 各自
 
 A: 重新克隆后直接运行安装命令，效果等同于升级（幂等）：
 ```bash
-git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
 cd claude-standard-dev-team
 bash scripts/install.sh  # 或在 Claude Code 内运行 /team-install
 ```
@@ -287,4 +287,4 @@ bash scripts/install.sh
 
 ---
 
-有问题欢迎开 [Issue](https://github.com/xuanbingbingo/claude-standard-dev-team/issues)。
+有问题欢迎开 [Issue](https://github.com/trkjoy/claude-standard-dev-team/issues)。

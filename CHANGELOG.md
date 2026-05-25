@@ -6,6 +6,65 @@
 
 ---
 
+## [1.0.8] - 2026-05-25
+
+### 变更（Changed）
+
+- **仓库迁移**：本仓库 fork 自上游 `xuanbingbingo/claude-standard-dev-team`，新地址为 `https://github.com/trkjoy/claude-standard-dev-team`。
+  - 同步替换所有文档、安装命令、升级命令、Plan 文档中的 `git clone` / `curl` / `Invoke-WebRequest` 下载源。
+  - 涉及文件：`.claude/commands/team-install.md`、`README.md`、`INSTALL.md`、`docs/USAGE.md`、`docs/superpowers/plans/2026-05-1*.md`。
+  - `LICENSE` 中原作者署名按 MIT 协议要求保留不变。
+
+### 升级方式
+
+#### 已经用过老版本的同事（推荐 `/team-update`）
+
+进入任一已经初始化过的项目目录，在 Claude Code 内运行：
+
+```
+/team-update          # 升到最新（1.0.8）
+/team-update 1.0.8    # 升到指定版本
+```
+
+它会自动从新仓库地址刷新全局 13 个 agent，并同步当前项目 CLAUDE.md 的团队配置段落。
+
+> ⚠️ 如果你的 `/team-update` 命令本身就是 v1.0.7 的旧版（指向老仓库），它无法升级自己。请先按下方"全新拉取覆盖"方式手动跑一次 `/team-install`，把命令本体替换为新仓库版本，之后 `/team-update` 才能正常工作。
+
+#### 全新拉取覆盖（升级 `/team-update` 自身 或 首次安装）
+
+```bash
+# Mac/Linux/WSL
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
+cd claude-standard-dev-team
+bash scripts/install.sh
+```
+
+```powershell
+# Windows
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
+cd claude-standard-dev-team
+pwsh .\scripts\install.ps1
+```
+
+或在 Claude Code 内 `cd` 到仓库目录后运行 `/team-install`。
+
+完成后**重启 Claude Code**。
+
+### 验证升级是否生效
+
+```bash
+# Mac/Linux/WSL
+grep -c trkjoy ~/.claude/commands/team-install.md   # 应输出 ≥ 2
+cat ~/.claude/agents/orchestrator.md | head -1      # 文件存在即可
+```
+
+```powershell
+# Windows
+(Get-Content "$HOME\.claude\commands\team-install.md" | Select-String 'trkjoy').Count   # 应 ≥ 2
+```
+
+---
+
 ## [1.0.7] - 2026-05-22
 
 ### 新增（Added）

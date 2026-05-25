@@ -10,9 +10,11 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blue.svg)](https://claude.com/claude-code)
-[![Version](https://img.shields.io/badge/Version-1.0.7-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.0.8-green.svg)](CHANGELOG.md)
 
-> 📢 **v1.0.7 架构级修复**：orchestrator 被作为 subagent 启动时无法派发下游团队（"can't dispatch further agents"）。现已明确——orchestrator 必须由 top-level 主会话亲自担任，只有下游 12 个 agent 才用 Task 派发。**强烈建议所有同事 `git pull && /team-install` 升级并重启 Claude Code**，详见 [CHANGELOG.md](CHANGELOG.md)。
+> 📢 **v1.0.8 仓库迁移**：本仓库 fork 自原作者，地址改为 `https://github.com/trkjoy/claude-standard-dev-team`。所有安装/升级命令（`/team-install`、`/team-update` 等）的下载源已同步切换到新地址。**老用户请运行 `/team-update` 升级**，详见 [CHANGELOG.md](CHANGELOG.md)。
+>
+> 📢 **v1.0.7 架构级修复**：orchestrator 被作为 subagent 启动时无法派发下游团队（"can't dispatch further agents"）。现已明确——orchestrator 必须由 top-level 主会话亲自担任，只有下游 12 个 agent 才用 Task 派发。详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
@@ -106,7 +108,7 @@ Phase 11  → technical-writer     → README + API_DOC
 ### 1. 装入 Claude Code
 
 ```bash
-git clone https://github.com/xuanbingbingo/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-standard-dev-team.git
 cp claude-standard-dev-team/agents/*.md ~/.claude/agents/
 ```
 
