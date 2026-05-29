@@ -37,7 +37,8 @@
       "PowerShell(git -C $repo show v1.0.7 --no-patch --oneline 2>$null)",
       "PowerShell(git -C $repo push origin main --tags)",
       "PowerShell(git -C $repo status -sb)",
-      "PowerShell(if \\($?\\) { \"? push �ɹ�\" } else { \"? push ʧ��\" })"
+      "PowerShell(if \\($?\\) { \"? push �ɹ�\" } else { \"? push ʧ��\" })",
+      "WebFetch(domain:docs.claude.com)"
     ]
   }
 }
