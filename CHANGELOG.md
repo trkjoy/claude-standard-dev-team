@@ -6,6 +6,42 @@
 
 ---
 
+## [1.0.9] - 2026-06-01
+
+> 一次安全加固发布：收紧默认权限、补强分发信任链、修复脚本健壮性与文档一致性问题。源于对仓库的一次完整安全审查。
+
+### 安全 / 变更（Security / Changed）— 含行为变更，升级后请留意
+
+- **H1｜收窄项目模板的 Bash 权限**：`templates/memory/settings.json` 与仓库 `.claude/settings.json` 不再无差别 `allow: ["Bash"]`（原配置等于静默自动执行任意 shell 命令）。改为：只读工具（Read/Glob/Grep）+ Task/Write + **Bash 安全前缀白名单**（`npm/npx/pnpm/yarn/node/python/pip/pytest/go/cargo`、`git status|diff|log|add|restore`、`mkdir/ls/cat/echo`）。
+  - ⚠️ **行为变更**：白名单之外的命令（`rm`、`curl|bash`、`sudo` 等）升级后将**逐条弹确认**，不再静默放行。需要更高自动化的用户可自行在项目 `.claude/settings.json` 增补前缀。
+- **H2｜停止跟踪本地配置**：`.claude/settings.local.json` 从版本库移除并加入 `.gitignore`。该文件含本机绝对路径、`git push` 等危险自动放行项及损坏编码，本不应入库。
+- **M1｜分发信任边界提示**：`README.md`、`.claude/commands/team-install.md` 增加安全说明——远程安装/升级从 GitHub `main` 拉取且**不校验完整性**、本仓库为 fork，建议优先本地 clone 安装、升级锁定 tag、安装前自审 `agents/*.md`。
+- **M3｜orchestrator 强制安全确认点**：`agents/orchestrator.md` 新增确认点——部署/热部署、删除文件或数据、`git push`/`reset --hard`、`sudo`/系统级、外发数据或对接生产凭据等**不可逆或对外操作前必须展示命令并等待用户确认**，即使 `settings.json` 已放行相关工具也生效（质量门 ≠ 安全门）。
+  - ⚠️ **行为变更**：完整项目 Phase 9 部署、Hotfix 热部署等环节会新增一次人工确认暂停。
+
+### 修复（Fixed）
+
+- **M2**：`scripts/install.sh`、`scripts/install.ps1` 在写入 `~/.codex/AGENTS.md`、`~/.gemini/GEMINI.md` 前自动备份为 `*.bak.时间戳`，避免覆盖用户已有的全局指令文件。
+- **L1**：`install.ps1` 的 `Get-AgentName` 限定在 frontmatter（前两个 `---` 之间）匹配 `name:`，与 `install.sh` 行为一致，避免误取正文中的 `name:` 行。
+- **L2**：`INSTALL.md` 旧版 PowerShell 安装命令由 `-ExecutionPolicy Bypass` 改为 `RemoteSigned`（足够运行本地脚本，不全量绕过）。
+- **L3**：`/team-update` 指定版本时，commit message 兜底搜索改为精确边界匹配；**0 条或多条命中时停止并列出候选**，要求用户用确切 commit hash 指定，不擅自猜选。
+- **L5**：`INSTALL.md` 卸载清单补全遗漏的 `kb-curator`、`qa-automator` 两个 agent 及 `team-update.md` 命令，避免卸载残留。
+
+### 升级方式
+
+```bash
+git pull            # 仓库目录
+/team-install       # 在 Claude Code 内运行，刷新全局 agents 与命令
+# 或在已初始化的项目目录：
+/team-update        # 升到最新（1.0.9），并同步该项目 CLAUDE.md
+```
+
+升级后**重启 Claude Code** 让 agent 与命令重新加载。
+
+> ⚠️ **已初始化项目的 `settings.json` 不会被自动更新**（`/team-init` 幂等、不覆盖已有文件）。如需让旧项目也享受 H1 的权限收窄，请手动用 `templates/memory/settings.json` 的新内容替换项目里的 `.claude/settings.json`。
+
+---
+
 ## [1.0.8] - 2026-05-25
 
 ### 变更（Changed）
