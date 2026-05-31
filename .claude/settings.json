@@ -1,12 +1,31 @@
 {
   "permissions": {
     "allow": [
-      "Task",
       "Read",
-      "Write",
       "Glob",
-      "Bash",
-      "Grep"
+      "Grep",
+      "Task",
+      "Write",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)",
+      "Bash(node *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(pip *)",
+      "Bash(pytest*)",
+      "Bash(go *)",
+      "Bash(cargo *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(git restore*)",
+      "Bash(mkdir *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(echo *)"
     ]
   }
 }

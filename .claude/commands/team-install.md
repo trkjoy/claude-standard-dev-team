@@ -30,7 +30,7 @@ uname -s 2>/dev/null || echo Windows
 用 Glob 或 Bash 检查：**当前目录或任意父目录**是否存在 `agents/orchestrator.md`。
 
 - **找到了** → 记录该目录为 `REPO_DIR`，直接用本地文件（更快，跳过下载）
-- **没找到** → 从 GitHub 下载：
+- **没找到** → 从 GitHub 下载（⚠️ **远程下载不校验完整性，且本仓库为 fork**；agent 会被装为全局可信指令。如介意供应链风险，请改用「先 `git clone` 仓库、再在仓库目录运行 `/team-install`」的本地方式）：
 
   Mac/Linux/WSL：
   ```bash

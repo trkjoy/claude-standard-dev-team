@@ -14,6 +14,8 @@
 
 > 📢 **v1.0.8 仓库迁移**：本仓库 fork 自原作者，地址改为 `https://github.com/trkjoy/claude-standard-dev-team`。所有安装/升级命令（`/team-install`、`/team-update` 等）的下载源已同步切换到新地址。**老用户请运行 `/team-update` 升级**，详见 [CHANGELOG.md](CHANGELOG.md)。
 >
+> 🔐 **安全提示（信任边界）**：本仓库为 fork，远程安装/升级会从 GitHub `main` 拉取 agent 文件并安装为 `~/.claude/agents/` 下的**全局可信指令**，过程**不做完整性校验**。建议优先用「先 `git clone` 仓库、再在仓库目录运行 `/team-install`」的本地安装方式；升级时用 `/team-update <版本号>` 锁定到已知 tag，而非盲拉 `main`。安装前可自行 review 一遍 `agents/*.md` 内容。
+>
 > 📢 **v1.0.7 架构级修复**：orchestrator 被作为 subagent 启动时无法派发下游团队（"can't dispatch further agents"）。现已明确——orchestrator 必须由 top-level 主会话亲自担任，只有下游 12 个 agent 才用 Task 派发。详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---

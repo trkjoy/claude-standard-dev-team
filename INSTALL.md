@@ -57,8 +57,8 @@ bash scripts/install.sh
 git clone https://github.com/trkjoy/claude-standard-dev-team.git
 cd claude-standard-dev-team
 pwsh .\scripts\install.ps1
-# 或旧版 PowerShell：
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
+# 或旧版 PowerShell（RemoteSigned 已足够运行本地脚本，不建议用 Bypass 全量绕过）：
+powershell -ExecutionPolicy RemoteSigned -File .\scripts\install.ps1
 ```
 
 脚本与 `/team-install` 效果相同，额外将全局命令注册到 `~/.claude/commands/`。
@@ -204,7 +204,7 @@ Get-Content "$HOME\.claude\agents\orchestrator.md" -TotalCount 5
 
 ```bash
 # Mac/Linux/WSL
-rm ~/.claude/agents/orchestrator.md \
+rm -f ~/.claude/agents/orchestrator.md \
    ~/.claude/agents/product-manager.md \
    ~/.claude/agents/software-architect.md \
    ~/.claude/agents/ui-designer.md \
@@ -213,11 +213,15 @@ rm ~/.claude/agents/orchestrator.md \
    ~/.claude/agents/frontend-developer.md \
    ~/.claude/agents/devops-automator.md \
    ~/.claude/agents/testing-evidence-collector.md \
+   ~/.claude/agents/qa-automator.md \
    ~/.claude/agents/security-engineer.md \
    ~/.claude/agents/code-reviewer.md \
    ~/.claude/agents/reality-checker.md \
-   ~/.claude/agents/technical-writer.md
-rm -f ~/.claude/commands/team-install.md ~/.claude/commands/team-init.md
+   ~/.claude/agents/technical-writer.md \
+   ~/.claude/agents/kb-curator.md
+rm -f ~/.claude/commands/team-install.md \
+   ~/.claude/commands/team-init.md \
+   ~/.claude/commands/team-update.md
 ```
 
 ```powershell
@@ -225,10 +229,11 @@ rm -f ~/.claude/commands/team-install.md ~/.claude/commands/team-init.md
 $a = "$HOME\.claude\agents"
 'orchestrator','product-manager','software-architect','ui-designer','database-optimizer',
 'backend-architect','frontend-developer','devops-automator','testing-evidence-collector',
-'security-engineer','code-reviewer','reality-checker','technical-writer' | ForEach-Object {
+'qa-automator','security-engineer','code-reviewer','reality-checker','technical-writer',
+'kb-curator' | ForEach-Object {
     Remove-Item "$a\$_.md" -Force -ErrorAction SilentlyContinue
 }
-Remove-Item "$HOME\.claude\commands\team-install.md","$HOME\.claude\commands\team-init.md" -Force -ErrorAction SilentlyContinue
+Remove-Item "$HOME\.claude\commands\team-install.md","$HOME\.claude\commands\team-init.md","$HOME\.claude\commands\team-update.md" -Force -ErrorAction SilentlyContinue
 ```
 
 ---

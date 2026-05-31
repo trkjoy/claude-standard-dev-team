@@ -4,3 +4,6 @@
 node_modules/
 .env
 .env.local
+
+# 本地个人配置：含本机绝对路径与个人放行项，不应入库
+.claude/settings.local.json

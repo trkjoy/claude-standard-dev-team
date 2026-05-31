@@ -351,6 +351,13 @@ _gen_team_doc() {
 
   mkdir -p "$(dirname "$out_file")"
 
+  # 该文件是用户的全局指令文件，可能已有自定义内容——覆盖前先备份
+  if [ -f "$out_file" ]; then
+    local bak="$out_file.bak.$(date +%Y%m%d_%H%M%S)"
+    cp "$out_file" "$bak"
+    echo "  ⚠  已备份原有文件 → $bak"
+  fi
+
   {
     printf '# 标准 AI 开发团队 (Standard AI Development Team)\n\n'
     printf '> 版本：%s  |  生成工具：claude-standard-dev-team\n' "$REPO_VERSION"

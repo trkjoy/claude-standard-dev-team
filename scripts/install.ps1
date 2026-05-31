@@ -104,8 +104,11 @@ Write-Host ''
 # ─── 工具函数 ─────────────────────────────────────────────────────────────────
 
 function Get-AgentName([string]$FilePath) {
+    # 仅在 frontmatter（前两个 --- 之间）内匹配 name:，避免误取正文里的 name: 行
+    $fmCount = 0
     foreach ($line in (Get-Content $FilePath -Encoding UTF8)) {
-        if ($line -match '^name:\s*(.+)$') { return $Matches[1].Trim() }
+        if ($line -eq '---') { $fmCount++; if ($fmCount -ge 2) { break }; continue }
+        if ($fmCount -eq 1 -and $line -match '^name:\s*(.+)$') { return $Matches[1].Trim() }
     }
     return ''
 }
@@ -354,6 +357,13 @@ function Install-OpenClaw { Install-SkillsPlatform 'openclaw' (Join-Path $HOME '
 
 function New-TeamDoc([string]$OutFile, [string]$PlatformName) {
     New-Item -ItemType Directory -Force -Path (Split-Path $OutFile) | Out-Null
+
+    # 该文件是用户的全局指令文件，可能已有自定义内容——覆盖前先备份
+    if (Test-Path $OutFile) {
+        $bak = "$OutFile.bak." + (Get-Date -Format 'yyyyMMdd_HHmmss')
+        Copy-Item $OutFile $bak -Force
+        Write-Host "  已备份原有文件 -> $bak" -ForegroundColor Yellow
+    }
 
     $tick = [char]96   # backtick 字符，避免在字符串中直接使用引发 PS 解析歧义
 

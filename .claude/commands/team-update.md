@@ -43,8 +43,11 @@ git -C "$REPO_DIR" pull
 ```
 
 **若指定了 `TARGET_VERSION`**：先 `git -C "$REPO_DIR" fetch origin --tags`，然后**按以下顺序三级尝试**切换，命中即停：
-1. tag 形式：`git -C "$REPO_DIR" checkout "v$TARGET_VERSION"` 或 `git -C "$REPO_DIR" checkout "$TARGET_VERSION"`
-2. commit message 搜索：`git -C "$REPO_DIR" log --all --oneline --grep="bump v$TARGET_VERSION"` 取到 commit hash 后 `git checkout <hash>`
+1. tag 形式（**首选**）：`git -C "$REPO_DIR" checkout "v$TARGET_VERSION"` 或 `git -C "$REPO_DIR" checkout "$TARGET_VERSION"`
+2. commit message 搜索（**仅当无对应 tag 时兜底**）：`git -C "$REPO_DIR" log --all --oneline --grep="bump v$TARGET_VERSION"`
+   - **精确匹配**：只接受 commit message 形如 `bump v$TARGET_VERSION` 且其后紧跟版本号边界（空格 / 冒号 / 行尾）的提交，排除 `bump v1.0.7x`、`bump v1.0.70` 这类前缀误命中
+   - **恰好 1 条命中** → `git -C "$REPO_DIR" checkout <hash>`
+   - **0 条或 ≥2 条命中** → **停止并列出所有候选**，请用户用确切 commit hash 指定，**禁止擅自猜选**
 3. 三级都失败 → **停止并报告**：`未找到版本 $TARGET_VERSION，请用 git tag / git log --oneline 确认可用版本号`，结束本命令
 
 > ⚠️ 切换前若仓库有未提交改动，先提示用户，不要强制 `reset --hard` 覆盖用户本地修改。
