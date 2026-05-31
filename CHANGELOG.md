@@ -6,6 +6,20 @@
 
 ---
 
+## [1.0.10] - 2026-06-01
+
+### 修复（Fixed）
+
+- **安装脚本漏注册 `/team-update` 命令**：`scripts/install.ps1` 与 `scripts/install.sh` 的 Claude Code 安装分支此前只复制 `team-install.md`、`team-init.md` 两个命令，遗漏了 `team-update.md`。导致**仅通过脚本（`install.sh` / `install.ps1`）首次安装**的用户拿不到 `/team-update` 命令；通过 Claude Code 内 `/team-install`（AI 命令）安装的用户不受影响。现已补齐为三个命令一并注册。
+
+### 升级方式
+
+```bash
+git pull && /team-install     # 或 bash scripts/install.sh / pwsh .\scripts\install.ps1
+```
+
+---
+
 ## [1.0.9] - 2026-06-01
 
 > 一次安全加固发布：收紧默认权限、补强分发信任链、修复脚本健壮性与文档一致性问题。源于对仓库的一次完整安全审查。

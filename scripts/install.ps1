@@ -265,6 +265,7 @@ function Install-Claude {
         New-Item -ItemType Directory -Force -Path $CommandsDest | Out-Null
         Copy-Item (Join-Path $CommandsSrc 'team-install.md') $CommandsDest -Force
         Copy-Item (Join-Path $CommandsSrc 'team-init.md')    $CommandsDest -Force
+        Copy-Item (Join-Path $CommandsSrc 'team-update.md')  $CommandsDest -Force
         Write-Host "已注册全局命令 -> $CommandsDest" -ForegroundColor Green
     } else {
         Write-Host '  跳过命令注册（.claude\commands\ 目录不存在）'

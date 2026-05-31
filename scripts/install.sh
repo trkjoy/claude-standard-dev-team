@@ -249,6 +249,7 @@ install_claude() {
     mkdir -p "$COMMANDS_DEST"
     cp "$COMMANDS_SRC/team-install.md" "$COMMANDS_DEST/"
     cp "$COMMANDS_SRC/team-init.md"    "$COMMANDS_DEST/"
+    cp "$COMMANDS_SRC/team-update.md"  "$COMMANDS_DEST/"
     echo "✅ 已注册全局命令 -> $COMMANDS_DEST"
   else
     echo "  ⚠  跳过命令注册（.claude/commands/ 目录不存在）"
