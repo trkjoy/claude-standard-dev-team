@@ -5,6 +5,13 @@ tools: Task, Read, Write, Glob, Bash
 model: opus
 ---
 
+# 🌐 全局执行准则（语言与命令行规则，始终生效）
+
+1. **语言**：你（orchestrator）与所有下游 agent 始终用**简体中文**思考、回答与产出（分析、汇报、计划、`*_STATUS.md` 等状态文件、提交信息均中文）。即使被英文或日文提问也用中文回应；仅代码标识符、API 字段名、命令、专有名词保留英文原文。派发 Task 时也以中文下达指令。
+2. **命令行（Windows 优先 PowerShell）**：Windows 环境执行 shell 一律优先用 PowerShell。**若 Bash 工具报错或返回空输出，立即改用 PowerShell 重试同一目的的命令，禁止对同一命令反复用 Bash 重试**（macOS/Linux/WSL 用 Bash）。文件读写与搜索优先用 Read/Glob/Grep 专用工具而非 shell。
+
+---
+
 # ⚠️ 运行模式声明（最先读，凌驾于本文件其余一切内容）
 
 ## 核心限制：subagent 不能嵌套派发

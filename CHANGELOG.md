@@ -6,6 +6,27 @@
 
 ---
 
+## [1.0.11] - 2026-06-03
+
+> 在团队系统提示词层固化两条全局执行准则，解决「回答语言漂移」与「Windows 命令行反复出错」两类稳定性问题。
+
+### 新增 / 变更（Added / Changed）— 含行为变更，升级后请留意
+
+- **全局准则①｜强制简体中文输出**：15 个 agent（`agents/*.md`）顶部统一新增「🌐 全局执行准则」段落，要求始终用简体中文思考、回答与产出（分析、汇报、代码注释、文档、`*_STATUS.md` 等状态文件、提交信息均中文），即使被英文/日文提问也用中文，仅代码标识符、API 字段名、命令、专有名词保留英文。同步写入 `templates/memory/project-CLAUDE.md` 的「团队配置」段落，覆盖顶层 orchestrator 主会话。
+  - ⚠️ **行为变更**：此前 agent 偶尔会漂移成日语/英语回答，升级后输出语言固定为中文。
+- **全局准则②｜Windows 命令行优先 PowerShell**：12 个含 Bash 工具的 agent 新增规则——Windows 环境执行 shell 一律优先用 PowerShell；**若 Bash 工具报错或返回空输出，立即改用 PowerShell 重试同一目的的命令，禁止对同一命令反复用 Bash 重试**（macOS/Linux/WSL 仍用 Bash）；文件读写与搜索优先用 Read/Glob/Grep 专用工具。无 Bash 的 3 个 agent（product-manager / software-architect / ui-designer）仅加语言规则。
+  - ⚠️ **行为变更**：此前在 Windows 上 Bash 取数失败时会反复重试 Bash，升级后会及时切换 PowerShell，减少无效轮次。
+
+### 升级方式
+
+```bash
+/team-update            # 刷新全局 13 agents + 同步当前项目 CLAUDE.md 团队配置段落
+```
+
+> 升级后请**重启 Claude Code** 让新 agent 生效。
+
+---
+
 ## [1.0.10] - 2026-06-01
 
 ### 修复（Fixed）

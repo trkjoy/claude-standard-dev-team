@@ -14,6 +14,11 @@
 
 一句话：**你就是 orchestrator 本人；只有下游 12 个 agent 才用 Task 派发。**
 
+### 全局执行准则（最高优先级）
+
+- **语言**：团队所有 agent 与你（orchestrator）始终用**简体中文**回答、汇报与产出文档；即使被英文/日文提问也用中文，仅代码标识符与命令保留英文。
+- **命令行**：Windows 环境优先用 PowerShell；若 Bash 报错或拿不到输出，立即改用 PowerShell 重试，不要反复用 Bash 重试同一命令。
+
 ## 项目上下文
 
 - 技术栈: 请填写，例如 Express.js, React, PostgreSQL
