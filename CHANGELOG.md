@@ -6,6 +6,31 @@
 
 ---
 
+## [1.1.0] - 2026-06-10
+
+> 接入 Workflow 并行编排引擎与 /goal 目标锚定能力，属 feature 级新增，无破坏性行为变更。
+
+### 新增（Added）
+
+- **Workflow 并行编排引擎（互补挂载 + 规则提示）**：在 `agents/orchestrator.md` 的需求分类环节后新增「Workflow 适用性扫描」——命中阈值（并行任务 ≥5 / 全仓扫描 ≥50 文件 / 同质操作 ≥20 处 / 需对抗验证 / 预估 >30 分钟）时**提示用户是否启用**，用户不点头则零行为变化，完全走原有 markdown 流程。
+  - **5 个下沉挂载点**：Phase5 后端多接口并行、Phase6 前端多页面并行、模板 B Audit 多维并行（bug/性能/安全/契约）+ 对抗验证、Phase7 安全审计按模块并行投票、大规模迁移/重构场景。
+  - 复用现有 13 个 agent（`agentType` 指向现有团队成员），**不新增 agent，不改任何 agent 契约**。
+  - 部署/删除/git push 等不可逆操作永远不进 workflow，仍由 orchestrator 串行把关。
+- **Workflow 脚本模板**：新增 `templates/workflows/team-dev-loop.workflow.js`（后端/前端 Dev-QA Loop 并行化，保留实现→验证→重试 ≤2 语义）与 `templates/workflows/audit-scan.workflow.js`（Audit 多维并行 + 对抗式验证），**随 `install.sh` / `install.ps1` 分发到用户级 `~/.claude/team-workflows/`**。
+- **install 分发 workflow 模板**：`scripts/install.sh` 与 `scripts/install.ps1` 的 Claude Code 安装分支新增第 3 步——将 `templates/workflows/*.workflow.js` 复制到 `~/.claude/team-workflows/`（目录命名与 `team-memory` 风格一致，幂等：重复运行不报错）。
+- **/goal 目标锚定**：`agents/orchestrator.md` 新增「/goal 锚定」小节——长链路任务（完整项目/大规模迁移/多轮 Audit-Fix）启动时把用户原始需求固化为一句话锚定目标，写入 `team-state/GOAL.md`；每个 Phase 边界自检是否偏离；workflow 下沉时把锚定目标作为硬性终止条件。**仅对长链路任务启用，单任务/Hotfix/纯文档不引入**。
+
+### 升级方式
+
+```bash
+git pull
+/team-install   # 刷新全局 agents + 分发 workflow 模板到 ~/.claude/team-workflows/
+```
+
+升级后**重启 Claude Code** 让新 agent 与 workflow 模板生效。
+
+---
+
 ## [1.0.11] - 2026-06-03
 
 > 在团队系统提示词层固化两条全局执行准则，解决「回答语言漂移」与「Windows 命令行反复出错」两类稳定性问题。

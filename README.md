@@ -10,7 +10,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blue.svg)](https://claude.com/claude-code)
-[![Version](https://img.shields.io/badge/Version-1.0.10-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.0-green.svg)](CHANGELOG.md)
 
 > 📢 **v1.0.8 仓库迁移**：本仓库 fork 自原作者，地址改为 `https://github.com/trkjoy/claude-standard-dev-team`。所有安装/升级命令（`/team-install`、`/team-update` 等）的下载源已同步切换到新地址。**老用户请运行 `/team-update` 升级**，详见 [CHANGELOG.md](CHANGELOG.md)。
 >

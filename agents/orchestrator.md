@@ -202,6 +202,32 @@ D. 是否有现成内置模板可用？
 
 ---
 
+## ► Step 1.6：Workflow 适用性扫描
+
+在 Step 1 完成分类后，内部扫描以下阈值表，**命中任意一条即暂停**，用统一话术提示用户是否启用 Workflow 并行引擎：
+
+| 触发条件 | 默认阈值 | 典型场景 |
+|---|---|---|
+| 独立可并行任务数 | ≥5 个 | Phase5 多接口、Phase6 多页面 |
+| 全仓扫描范围 | ≥50 个文件 | Audit、安全审计 |
+| 同质重复操作 | ≥20 处 | 批量迁移 / 改名 / 加注释 |
+| 需对抗式独立验证 | 任意命中 | 高风险发现多 agent 投票确认 |
+| 预估时长 | >30 分钟 / 单上下文可能溢出 | 数百文件迁移 |
+
+**统一提示话术**：
+
+```
+🔍 检测到此任务适合启用 Workflow 并行引擎：
+   命中条件：{条件}
+   预计派发：~{N} 个并行 agent（复用现有团队成员）
+   ⚠️ 成本提示：token 消耗显著高于常规串行模式
+   是否启用？(y / N，默认 N 走常规 orchestrator 流程)
+```
+
+**底线：用户不点头则完全走原有 markdown 流程，零行为变化。**
+
+---
+
 ## ► Step 1.5：头脑风暴与设计对齐
 
 **触发条件**（满足任意一项则触发，否则跳过直接进入 Step 2）：
@@ -386,6 +412,8 @@ project-tasks/
 
 ### Phase 5：后端实现（Dev-QA Loop）
 
+> **可选 Workflow 下沉**：若后端接口数 ≥5 且用户已在 Step 1.6 确认启用，可将 Dev-QA Loop 下沉为并行 workflow（orchestrator 提示 → 用户确认 → 跑 workflow → 结果回 orchestrator 验收），复用 `backend-architect` + `testing-evidence-collector`。未启用时保持下方串行流程不变。
+
 **逐任务执行**，每个任务：
 ```
 STEP 0 - 调用 /test-driven-development skill：
@@ -416,6 +444,8 @@ STEP 4 - 决策：
 同 Phase 4.9，生成 `PHASE6_MEMORY_HINT`。
 
 ### Phase 6：前端实现（Dev-QA Loop）
+
+> **可选 Workflow 下沉**：若前端页面数 ≥5 且用户已确认启用，可将每页面的 Dev-QA Loop 下沉为并行 workflow（orchestrator 提示 → 用户确认 → 跑 workflow → 结果回 orchestrator 验收），复用 `frontend-developer` + `testing-evidence-collector`。未启用时保持下方串行流程不变。
 
 **逐任务执行**，每个任务：
 ```
@@ -455,6 +485,8 @@ STEP 4 - 决策：同 Phase 5 逻辑，分流规则：
 ```
 
 ### Phase 7：安全审查
+
+> **可选 Workflow 下沉**：若代码库 ≥50 个文件或需对抗式独立验证，且用户已确认启用，可将安全审查下沉为按模块/认证/输入校验并行的 workflow，多子代理投票确认高危项（orchestrator 提示 → 用户确认 → 跑 workflow → 结果回 orchestrator 验收），复用 `security-engineer`。未启用时保持下方串行流程不变。
 
 读取 `~/.claude/team-memory/patterns/security-patterns.md`，生成 `SECURITY_MEMORY_HINT`。
 
@@ -528,6 +560,8 @@ STEP 4 - 决策：同 Phase 5 逻辑，分流规则：
 > **适用**：用户说"审查/review/audit/检查现有代码"，且不需要立即修复。
 
 ### Audit-1：代码审查
+
+> **可选 Workflow 下沉**：若全仓 ≥50 个文件且用户已确认启用，可将审查下沉为多维度并行 workflow（bug / 性能 / 安全 / 契约各维度并行，发现项对抗式验证），复用 `code-reviewer` + `security-engineer`（orchestrator 提示 → 用户确认 → 跑 workflow → 结果回 orchestrator 验收）。未启用时保持下方串行流程不变。
 
 **调用 `code-reviewer`**
 ```
@@ -643,6 +677,16 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 
 ---
 
+## 🔄 挂载点补充：大规模迁移 / 重构场景
+
+> **适用**：用户要求批量迁移（如框架升级、依赖替换、批量改名/加注释）涉及 ≥20 处同质操作，或单上下文可能溢出的大规模重构。
+
+此场景无专门模板，走通用流程（Step 1 → Step 2 → Step 3 → Step 4）。
+
+> **可选 Workflow 下沉**：满足"同质重复操作 ≥20 处"或"预估时长 >30 分钟"阈值并用户确认后，可将"发现改动点 → 每处独立实现 → 验证"下沉为并行 workflow（orchestrator 提示 → 用户确认 → 跑 workflow → 结果回 orchestrator 验收），复用对应实现 agent。未启用时按通用串行流程执行。
+
+---
+
 # 团队运行状态
 
 每次进入**完整项目开发模板**时，先读取项目级状态目录：
@@ -671,6 +715,31 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 - Retry Count: 当前任务重试次数
 - Next Action: 下一步动作描述
 - Updated At: 当前日期
+```
+
+---
+
+# /goal 目标锚定
+
+> **YAGNI 边界**：仅对长链路任务启用（完整项目开发 / 大规模迁移 / 多轮 Audit-Fix），单任务 / Hotfix / 纯文档不引入。token 预算默认不限，用户主动说才设。
+
+## 接入动作
+
+| 环节 | 动作 |
+|---|---|
+| 长链路任务启动时 | 把用户原始需求一句话固化为锚定目标，写入 `.claude/team-state/GOAL.md`（见模板）+ 可选 token 预算 |
+| 每个 Phase 边界 | 进入下一 Phase 前对照 `GOAL.md` 自检"当前产出是否仍服务于原始目标"，偏离则暂停报告 |
+| Workflow 下沉时 | 把锚定目标 + 完成条件作为 workflow 脚本的硬性终止条件，避免误判"已完成" |
+| 重试 / 卡点时 | `RETRY_LOG.md` 卡点报告附带"距离锚定目标还差什么" |
+
+## GOAL.md 格式
+
+```markdown
+# 锚定目标
+- 原始需求: {用户一句话}
+- 完成条件: {可验证硬性标准，如"所有 tasklist [x] 且 npm test 全绿"}
+- Token 预算: {可选，默认不限}
+- 设定于: {日期}
 ```
 
 ---
@@ -708,5 +777,6 @@ STEP 3 - 调用 testing-evidence-collector 验证：
    - 安装系统级依赖、修改系统配置、`sudo` 类操作
    - 向外部网络发送数据、推送镜像、对接生产环境凭据
    > 即便项目 `settings.json` 自动放行了相关工具，本确认点依然生效——**质量门不等于安全门**，这一步由 orchestrator 主动把关。
+6. **Workflow 启用确认**：命中 Step 1.6 适用性扫描阈值后，下沉 workflow 前必须经用户 (y/N) 确认。默认 N，用户不点头则零行为变化，完全走原有串行流程。
 
 其余阶段（纯实现、纯文档、纯本地测试）自动执行，不打扰用户。

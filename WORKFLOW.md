@@ -383,3 +383,45 @@ reality-checker 是个**疑心病**——默认判决是"NEEDS WORK"。它会：
 ---
 
 读完想动手试试？回到 [INSTALL.md](INSTALL.md) 装上之后说一句"使用标准团队帮我做 X"就开始了。
+
+---
+
+## 九、何时启用 Workflow / Goal
+
+### Workflow 触发阈值
+
+命中以下任意一条，orchestrator 会暂停并提示是否启用并行引擎：
+
+| 条件 | 阈值 |
+|---|---|
+| 独立可并行任务数 | ≥5 个 |
+| 全仓扫描文件数 | ≥50 个 |
+| 同质重复操作数 | ≥20 处 |
+| 需对抗式独立验证 | 任意命中 |
+| 预估时长 / 溢出风险 | >30 分钟或单上下文可能溢出 |
+
+### 成本提示
+
+Workflow 并行引擎的 token 消耗**显著高于常规串行模式**（多个子代理同时运行）。orchestrator 会在启用前明确告知，用户确认后才跑。
+
+### 如何触发
+
+- **自动检测**：orchestrator 在 Step 1.6 扫描阈值，命中即提示。
+- **手动触发**：用户说"用 workflow"或"启用并行"，orchestrator 跳过检测直接提示确认。
+- **默认行为**：提示后用户选 N（或不回复），完全走原有串行流程，零行为变化。
+
+### 5 个下沉挂载点一览
+
+| 挂载点 | 复用 agent |
+|---|---|
+| 完整项目 Phase5 后端实现 | backend-architect + testing-evidence-collector |
+| 完整项目 Phase6 前端实现 | frontend-developer + testing-evidence-collector |
+| 模板 B Audit 全仓审查 | code-reviewer + security-engineer |
+| Phase7 安全审计 | security-engineer |
+| 大规模迁移 / 重构 | 对应实现 agent |
+
+所有挂载点遵循统一闭环：**orchestrator 提示 → 用户确认 → 跑 workflow → 结果回 orchestrator 验收**。安全/不可逆操作永不进并行，状态机仍归 orchestrator。
+
+### /goal 适用范围
+
+仅对**长链路任务**启用（完整项目开发、大规模迁移、多轮 Audit-Fix）。触发时 orchestrator 将用户原始需求写入 `.claude/team-state/GOAL.md`，在每个 Phase 边界自检防漂移，卡点报告附"距离目标还差什么"。token 预算默认不限。单任务 / Hotfix / 纯文档不引入。

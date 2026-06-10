@@ -6,9 +6,10 @@ $ErrorActionPreference = 'Stop'
 
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoDir     = Split-Path -Parent $ScriptDir
-$AgentsSrc   = Join-Path $RepoDir 'agents'
-$TplSrc      = Join-Path $RepoDir 'templates\memory'
-$CommandsSrc = Join-Path $RepoDir '.claude\commands'
+$AgentsSrc    = Join-Path $RepoDir 'agents'
+$TplSrc       = Join-Path $RepoDir 'templates\memory'
+$WorkflowsSrc = Join-Path $RepoDir 'templates\workflows'
+$CommandsSrc  = Join-Path $RepoDir '.claude\commands'
 $VersionFile = Join-Path $RepoDir 'VERSION'
 $RepoVersion = (Get-Content $VersionFile -Raw).Trim()
 
@@ -218,9 +219,11 @@ function Merge-PatternFile([string]$SrcTemplate, [string]$DestFile) {
 # ─── Claude Code 安装 ────────────────────────────────────────────────────────
 
 function Install-Claude {
-    $AgentsDest   = Join-Path $HOME '.claude\agents'
-    $MemDest      = Join-Path $HOME '.claude\team-memory\patterns'
-    $CommandsDest = Join-Path $HOME '.claude\commands'
+    $AgentsDest    = Join-Path $HOME '.claude\agents'
+    $MemDest       = Join-Path $HOME '.claude\team-memory\patterns'
+    # workflow 模板分发到 ~/.claude/team-workflows/，与 team-memory 风格一致
+    $WorkflowsDest = Join-Path $HOME '.claude\team-workflows'
+    $CommandsDest  = Join-Path $HOME '.claude\commands'
 
     # 1. Agent 文件
     New-Item -ItemType Directory -Force -Path $AgentsDest | Out-Null
@@ -260,7 +263,22 @@ function Install-Claude {
         }
     }
 
-    # 3. 全局命令
+    # 3. Workflow 模板（复制所有 *.workflow.js 到用户级目录，幂等覆盖）
+    # 分发路径：~/.claude/team-workflows/，与 team-memory 命名风格一致
+    if (Test-Path $WorkflowsSrc) {
+        New-Item -ItemType Directory -Force -Path $WorkflowsDest | Out-Null
+        $wfFiles = @(Get-ChildItem (Join-Path $WorkflowsSrc '*.workflow.js') -ErrorAction SilentlyContinue)
+        if ($wfFiles.Count -gt 0) {
+            $wfFiles | Copy-Item -Destination $WorkflowsDest -Force
+            Write-Host "已分发 $($wfFiles.Count) 个 workflow 模板 -> $WorkflowsDest" -ForegroundColor Green
+        } else {
+            Write-Host '  跳过 workflow 分发（templates\workflows\ 下暂无 *.workflow.js 文件）'
+        }
+    } else {
+        Write-Host '  跳过 workflow 分发（templates\workflows\ 目录不存在）'
+    }
+
+    # 4. 全局命令
     if (Test-Path $CommandsSrc) {
         New-Item -ItemType Directory -Force -Path $CommandsDest | Out-Null
         Copy-Item (Join-Path $CommandsSrc 'team-install.md') $CommandsDest -Force

@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 AGENTS_SRC="$REPO_DIR/agents"
 TEMPLATES_SRC="$REPO_DIR/templates/memory"
+WORKFLOWS_SRC="$REPO_DIR/templates/workflows"
 COMMANDS_SRC="$REPO_DIR/.claude/commands"
 VERSION_FILE="$REPO_DIR/VERSION"
 REPO_VERSION="$(cat "$VERSION_FILE" | tr -d '[:space:]')"
@@ -204,6 +205,8 @@ _merge_pattern_file() {
 install_claude() {
   local AGENTS_DEST="$HOME/.claude/agents"
   local MEMORY_DEST="$HOME/.claude/team-memory/patterns"
+  # workflow 模板分发到 ~/.claude/team-workflows/，与 team-memory 风格一致
+  local WORKFLOWS_DEST="$HOME/.claude/team-workflows"
   local COMMANDS_DEST="$HOME/.claude/commands"
 
   # 1. Agent 文件
@@ -244,7 +247,26 @@ install_claude() {
     esac
   done
 
-  # 3. 全局命令
+  # 3. Workflow 模板（复制所有 *.workflow.js 到用户级目录，幂等覆盖）
+  # 分发路径：~/.claude/team-workflows/，与 team-memory 命名风格一致
+  if [ -d "$WORKFLOWS_SRC" ]; then
+    mkdir -p "$WORKFLOWS_DEST"
+    local wf_count=0
+    for wf in "$WORKFLOWS_SRC"/*.workflow.js; do
+      [ -f "$wf" ] || continue   # 目录下暂无文件时安全跳过
+      cp "$wf" "$WORKFLOWS_DEST/"
+      wf_count=$((wf_count + 1))
+    done
+    if [ "$wf_count" -gt 0 ]; then
+      echo "✅ 已分发 $wf_count 个 workflow 模板 -> $WORKFLOWS_DEST"
+    else
+      echo "  ⚠  跳过 workflow 分发（templates/workflows/ 下暂无 *.workflow.js 文件）"
+    fi
+  else
+    echo "  ⚠  跳过 workflow 分发（templates/workflows/ 目录不存在）"
+  fi
+
+  # 4. 全局命令
   if [ -d "$COMMANDS_SRC" ]; then
     mkdir -p "$COMMANDS_DEST"
     cp "$COMMANDS_SRC/team-install.md" "$COMMANDS_DEST/"
