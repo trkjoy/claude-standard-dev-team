@@ -16,7 +16,7 @@ $RepoVersion = (Get-Content $VersionFile -Raw).Trim()
 if (-not (Test-Path $AgentsSrc)) {
     Write-Host ''
     Write-Host "找不到 agents 目录：$AgentsSrc" -ForegroundColor Red
-    Write-Host '   请在 claude-standard-dev-team 克隆目录中运行此脚本。'
+    Write-Host '   请在 claude-dev-ai-team 克隆目录中运行此脚本。'
     exit 1
 }
 
@@ -389,7 +389,7 @@ function New-TeamDoc([string]$OutFile, [string]$PlatformName) {
     $sb = [System.Text.StringBuilder]::new()
     [void]$sb.AppendLine('# 标准 AI 开发团队 (Standard AI Development Team)')
     [void]$sb.AppendLine('')
-    [void]$sb.AppendLine('> 版本：' + $RepoVersion + '  |  生成工具：claude-standard-dev-team')
+    [void]$sb.AppendLine('> 版本：' + $RepoVersion + '  |  生成工具：claude-dev-ai-team')
     [void]$sb.AppendLine('> 请勿手动编辑，重新运行 install.ps1 可升级。')
     [void]$sb.AppendLine('')
     [void]$sb.AppendLine('---')

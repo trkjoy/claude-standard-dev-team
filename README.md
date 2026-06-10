@@ -10,9 +10,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blue.svg)](https://claude.com/claude-code)
-[![Version](https://img.shields.io/badge/Version-1.1.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.1-green.svg)](CHANGELOG.md)
 
-> 📢 **v1.0.8 仓库迁移**：本仓库 fork 自原作者，地址改为 `https://github.com/trkjoy/claude-standard-dev-team`。所有安装/升级命令（`/team-install`、`/team-update` 等）的下载源已同步切换到新地址。**老用户请运行 `/team-update` 升级**，详见 [CHANGELOG.md](CHANGELOG.md)。
+> 📢 **v1.1.1 仓库迁移**：仓库地址现已变更为 `https://github.com/trkjoy/claude-dev-ai-team`。所有安装/升级命令（`/team-install`、`/team-update` 等）的下载源已同步切换到新地址。**老用户请运行 `/team-update` 升级**，详见 [CHANGELOG.md](CHANGELOG.md)。
 >
 > 🔐 **安全提示（信任边界）**：本仓库为 fork，远程安装/升级会从 GitHub `main` 拉取 agent 文件并安装为 `~/.claude/agents/` 下的**全局可信指令**，过程**不做完整性校验**。建议优先用「先 `git clone` 仓库、再在仓库目录运行 `/team-install`」的本地安装方式；升级时用 `/team-update <版本号>` 锁定到已知 tag，而非盲拉 `main`。安装前可自行 review 一遍 `agents/*.md` 内容。
 >
@@ -110,8 +110,8 @@ Phase 11  → technical-writer     → README + API_DOC
 ### 1. 装入 Claude Code
 
 ```bash
-git clone https://github.com/trkjoy/claude-standard-dev-team.git
-cp claude-standard-dev-team/agents/*.md ~/.claude/agents/
+git clone https://github.com/trkjoy/claude-dev-ai-team.git
+cp claude-dev-ai-team/agents/*.md ~/.claude/agents/
 ```
 
 ### 2. 在 Claude Code 里说一句话启动

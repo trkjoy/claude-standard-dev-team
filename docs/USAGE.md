@@ -31,8 +31,8 @@
 **第一步：全局安装（一次性）**
 
 ```bash
-git clone https://github.com/trkjoy/claude-standard-dev-team.git
-cd claude-standard-dev-team
+git clone https://github.com/trkjoy/claude-dev-ai-team.git
+cd claude-dev-ai-team
 bash scripts/install.sh
 ```
 
@@ -44,7 +44,7 @@ bash scripts/install.sh
 
 ```bash
 cd 你的项目目录
-bash /path/to/claude-standard-dev-team/scripts/team-init.sh
+bash /path/to/claude-dev-ai-team/scripts/team-init.sh
 ```
 
 脚本会交互式问两个问题：
@@ -75,8 +75,8 @@ bash /path/to/claude-standard-dev-team/scripts/team-init.sh
 **第一步：全局安装（一次性）**
 
 ```powershell
-git clone https://github.com/trkjoy/claude-standard-dev-team.git
-cd claude-standard-dev-team
+git clone https://github.com/trkjoy/claude-dev-ai-team.git
+cd claude-dev-ai-team
 pwsh .\scripts\install.ps1
 ```
 
@@ -178,7 +178,7 @@ orchestrator 读取 `STATE.md` 从中断点恢复，已完成的阶段不会重�
 
 ```bash
 # Mac/Linux/WSL
-cd /path/to/claude-standard-dev-team && git pull && bash scripts/install.sh
+cd /path/to/claude-dev-ai-team && git pull && bash scripts/install.sh
 
 # Windows
 cd C:\path\to\claude-standard-dev-team; git pull; pwsh .\scripts\install.ps1
@@ -250,7 +250,7 @@ export OPENAI_API_KEY="your-key"
 只需克隆仓库获取 agent prompt 文件：
 
 ```bash
-git clone https://github.com/trkjoy/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-dev-ai-team.git
 ```
 
 ### 手动多步调用（示例）
@@ -259,7 +259,7 @@ git clone https://github.com/trkjoy/claude-standard-dev-team.git
 
 ```bash
 codex --model gpt-4o \
-  --instructions "$(cat claude-standard-dev-team/agents/product-manager.md)" \
+  --instructions "$(cat claude-dev-ai-team/agents/product-manager.md)" \
   "帮我分析以下需求并生成 PRD：用户管理系统，支持注册/登录/角色权限"
 ```
 
@@ -267,7 +267,7 @@ codex --model gpt-4o \
 
 ```bash
 codex --model gpt-4o \
-  --instructions "$(cat claude-standard-dev-team/agents/software-architect.md)" \
+  --instructions "$(cat claude-dev-ai-team/agents/software-architect.md)" \
   "根据以下 PRD 生成 API_CONTRACT、DB_SCHEMA、TECH_SPEC：$(cat PRD.md)"
 ```
 
@@ -275,7 +275,7 @@ codex --model gpt-4o \
 
 ```bash
 codex --model gpt-4o \
-  --instructions "$(cat claude-standard-dev-team/agents/security-engineer.md)" \
+  --instructions "$(cat claude-dev-ai-team/agents/security-engineer.md)" \
   "扫描当前项目 src/ 目录，输出 SECURITY_REPORT"
 ```
 
@@ -283,7 +283,7 @@ codex --model gpt-4o \
 
 ```bash
 #!/usr/bin/env bash
-AGENTS="./claude-standard-dev-team/agents"
+AGENTS="./claude-dev-ai-team/agents"
 
 # Phase 1
 codex --model gpt-4o --instructions "$(cat $AGENTS/product-manager.md)" "需求：$1" > PRD.md
@@ -331,7 +331,7 @@ export GOOGLE_API_KEY="your-key"
 ```bash
 gemini \
   --model gemini-2.5-pro \
-  --system-prompt "$(cat claude-standard-dev-team/agents/code-reviewer.md)" \
+  --system-prompt "$(cat claude-dev-ai-team/agents/code-reviewer.md)" \
   -f src/ \
   "评审 src/ 目录的代码"
 ```
@@ -341,7 +341,7 @@ gemini \
 ```bash
 gemini \
   --model gemini-2.5-pro \
-  --system-prompt "$(cat claude-standard-dev-team/agents/security-engineer.md)" \
+  --system-prompt "$(cat claude-dev-ai-team/agents/security-engineer.md)" \
   -f src/ \
   "扫描安全问题，输出 SECURITY_REPORT"
 ```
@@ -352,7 +352,7 @@ gemini \
 # 大上下文优势：传入整个项目做验收
 gemini \
   --model gemini-2.5-pro \
-  --system-prompt "$(cat claude-standard-dev-team/agents/reality-checker.md)" \
+  --system-prompt "$(cat claude-dev-ai-team/agents/reality-checker.md)" \
   -f docs/ -f src/ -f project-tasks/ \
   "对整个项目做最终验收，判决 READY 或 NEEDS WORK"
 ```
@@ -362,7 +362,7 @@ gemini \
 ```bash
 gemini \
   --model gemini-2.5-pro \
-  --system-prompt "$(cat claude-standard-dev-team/agents/software-architect.md)" \
+  --system-prompt "$(cat claude-dev-ai-team/agents/software-architect.md)" \
   -f PRD.md \
   "生成 API_CONTRACT、DB_SCHEMA、TECH_SPEC"
 ```

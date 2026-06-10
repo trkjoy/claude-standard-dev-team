@@ -15,7 +15,7 @@ REPO_VERSION="$(cat "$VERSION_FILE" | tr -d '[:space:]')"
 
 if [ ! -d "$AGENTS_SRC" ]; then
   echo "❌ 找不到 agents 目录：$AGENTS_SRC" >&2
-  echo "   请在 claude-standard-dev-team 克隆目录中运行此脚本。" >&2
+  echo "   请在 claude-dev-ai-team 克隆目录中运行此脚本。" >&2
   exit 1
 fi
 
@@ -383,7 +383,7 @@ _gen_team_doc() {
 
   {
     printf '# 标准 AI 开发团队 (Standard AI Development Team)\n\n'
-    printf '> 版本：%s  |  生成工具：claude-standard-dev-team\n' "$REPO_VERSION"
+    printf '> 版本：%s  |  生成工具：claude-dev-ai-team\n' "$REPO_VERSION"
     printf '> 请勿手动编辑，重新运行 install.sh 可升级。\n\n'
     printf -- '---\n\n'
     printf '## 使用方式\n\n'

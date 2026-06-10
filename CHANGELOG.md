@@ -6,6 +6,24 @@
 
 ---
 
+## [1.1.1] - 2026-06-10
+
+> 仓库地址迁移至 `https://github.com/trkjoy/claude-dev-ai-team`，同步更新所有安装/升级下载源、README/INSTALL/USAGE 中的 clone 地址与目录名。
+
+### 变更（Changed）
+
+- **仓库迁移**：仓库地址从 `https://github.com/trkjoy/claude-standard-dev-team` 迁移至 `https://github.com/trkjoy/claude-dev-ai-team`（仓库名从 `claude-standard-dev-team` 变更为 `claude-dev-ai-team`）。
+- 同步更新 `.claude/commands/team-install.md` 和 `.claude/commands/team-update.md` 中的下载源 URL 及解压后目录名。
+- 同步更新 `README.md`、`INSTALL.md`、`docs/USAGE.md` 中所有 `git clone` 示例 URL 及 `cd`/路径引用。
+- 同步更新 `scripts/install.sh` 与 `scripts/install.ps1` 中面向用户的提示字符串。
+- 同步更新 `package-lock.json` 中的 `name` 字段。
+
+### 升级方式
+
+老用户运行 `/team-update` 即可拉取最新命令与 agents，无其他行为变更。
+
+---
+
 ## [1.1.0] - 2026-06-10
 
 > 接入 Workflow 并行编排引擎与 /goal 目标锚定能力，属 feature 级新增，无破坏性行为变更。

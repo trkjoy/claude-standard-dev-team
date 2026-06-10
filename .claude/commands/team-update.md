@@ -30,7 +30,7 @@ description: 把当前项目升级到指定版本（刷新全局 13 agents + 同
 - **找到** → 记为 `REPO_DIR`
 - **没找到** → 从 GitHub 克隆到临时目录（Mac/Linux 用 `/tmp/csd-update`，Windows 用 `$env:TEMP\csd-update`）：
   ```
-  https://github.com/trkjoy/claude-standard-dev-team.git
+  https://github.com/trkjoy/claude-dev-ai-team.git
   ```
 
 ### Step 3 — 切换到目标版本

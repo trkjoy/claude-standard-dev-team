@@ -12,10 +12,10 @@
 
 ```bash
 # 1. 克隆仓库（仅首次）
-git clone https://github.com/trkjoy/claude-standard-dev-team.git
+git clone https://github.com/trkjoy/claude-dev-ai-team.git
 
 # 2. 在仓库目录打开 Claude Code
-cd claude-standard-dev-team
+cd claude-dev-ai-team
 claude .
 
 # 3. 在 Claude Code 里运行安装命令
@@ -46,16 +46,16 @@ claude .
 **Mac / Linux / WSL：**
 
 ```bash
-git clone https://github.com/trkjoy/claude-standard-dev-team.git
-cd claude-standard-dev-team
+git clone https://github.com/trkjoy/claude-dev-ai-team.git
+cd claude-dev-ai-team
 bash scripts/install.sh
 ```
 
 **Windows（PowerShell）：**
 
 ```powershell
-git clone https://github.com/trkjoy/claude-standard-dev-team.git
-cd claude-standard-dev-team
+git clone https://github.com/trkjoy/claude-dev-ai-team.git
+cd claude-dev-ai-team
 pwsh .\scripts\install.ps1
 # 或旧版 PowerShell（RemoteSigned 已足够运行本地脚本，不建议用 Bypass 全量绕过）：
 powershell -ExecutionPolicy RemoteSigned -File .\scripts\install.ps1
@@ -139,8 +139,8 @@ git log --oneline -5
 
 ```bash
 # 1. 进入克隆的仓库目录
-cd /path/to/claude-standard-dev-team    # Mac/Linux/WSL
-cd C:\path\to\claude-standard-dev-team  # Windows
+cd /path/to/claude-dev-ai-team    # Mac/Linux/WSL
+cd C:\path\to\claude-dev-ai-team  # Windows
 
 # 2. 拉取最新代码
 git pull
@@ -156,12 +156,12 @@ claude .
 
 ```bash
 # Mac/Linux/WSL
-cd /path/to/claude-standard-dev-team && git pull && bash scripts/install.sh
+cd /path/to/claude-dev-ai-team && git pull && bash scripts/install.sh
 ```
 
 ```powershell
 # Windows
-cd C:\path\to\claude-standard-dev-team; git pull; pwsh .\scripts\install.ps1
+cd C:\path\to\claude-dev-ai-team; git pull; pwsh .\scripts\install.ps1
 ```
 
 **方式三：手动升级（只更新部分 agent）**
@@ -267,8 +267,8 @@ A: 主对话消耗很低（几千 token）。orchestrator 派的子 agent 各自
 
 A: 重新克隆后直接运行安装命令，效果等同于升级（幂等）：
 ```bash
-git clone https://github.com/trkjoy/claude-standard-dev-team.git
-cd claude-standard-dev-team
+git clone https://github.com/trkjoy/claude-dev-ai-team.git
+cd claude-dev-ai-team
 bash scripts/install.sh  # 或在 Claude Code 内运行 /team-install
 ```
 
@@ -292,4 +292,4 @@ bash scripts/install.sh
 
 ---
 
-有问题欢迎开 [Issue](https://github.com/trkjoy/claude-standard-dev-team/issues)。
+有问题欢迎开 [Issue](https://github.com/trkjoy/claude-dev-ai-team/issues)。
