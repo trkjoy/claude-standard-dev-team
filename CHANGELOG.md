@@ -6,6 +6,18 @@
 
 ---
 
+## [1.1.2] - 2026-06-11
+
+> 修复 v1.1.x 经首次 audit-scan workflow 实战体检暴露的 3 个问题。
+
+### 修复（Fixed）
+
+- **[HIGH] `templates/workflows/audit-scan.workflow.js`**：扫描阶段 `return { dimension: dim, ...findings }` 用对象展开会被 agent 自填的 `dimension` 字段覆盖外层硬编码值，导致下游对抗式验证选错 agentType / 维度标签错乱。改为明确取 `findings.findings`。
+- **[LOW] `templates/workflows/audit-scan.workflow.js`**：删除从未使用且注释语义倒置的孤立常量 `REFUTE_AGENT_TYPE`。
+- **[LOW] `scripts/install.ps1`**：`Write-VersionFile` 由 `Out-File -Encoding utf8`（PS 5.1 下写入 BOM）改为无 BOM 的 `[System.IO.File]::WriteAllText`，避免 `install.sh` 读取版本号时 BOM 残留导致版本比较永不相等、每次全量重装。
+
+---
+
 ## [1.1.1] - 2026-06-10
 
 > 仓库地址迁移至 `https://github.com/trkjoy/claude-dev-ai-team`，同步更新所有安装/升级下载源、README/INSTALL/USAGE 中的 clone 地址与目录名。

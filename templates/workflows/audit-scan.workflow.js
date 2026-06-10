@@ -52,8 +52,7 @@ const DIMENSION_AGENT_MAP = {
 };
 
 // 对抗式验证使用的 agent（保持独立视角，不与扫描 agent 相同）
-// TODO（接入时可根据项目实际情况调整）
-const REFUTE_AGENT_TYPE = "security-engineer"; // 对安全维度；其余维度用 code-reviewer
+// 安全维度由 code-reviewer 反驳，其余维度由 security-engineer 反驳，确保与扫描 agent 不同
 function resolveRefuteAgentType(dimension) {
   return dimension === "security" ? "code-reviewer" : "security-engineer";
 }
@@ -142,7 +141,9 @@ ${targets.join("\n")}
       },
     });
 
-    return { dimension: dim, ...findings };
+    // 明确取 findings.findings 数组，避免 spread 整个返回对象时
+    // agent 自填的 dimension 字段覆盖外层硬编码的 dim（控制字段污染）
+    return { dimension: dim, findings: findings.findings ?? [] };
   });
 
   // parallel 有屏障：全部维度扫描完成后才进入下一阶段

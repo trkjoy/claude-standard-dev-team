@@ -154,7 +154,9 @@ function Get-AgentBody([string]$FilePath) {
 
 function Write-VersionFile {
     New-Item -ItemType Directory -Force -Path (Split-Path $VerFile) | Out-Null
-    $RepoVersion | Out-File -FilePath $VerFile -Encoding utf8 -NoNewline
+    # 用无 BOM UTF-8 写出，避免 PS 5.1 的 Out-File -Encoding utf8 写入 BOM
+    # 导致 install.sh 读取版本号时 BOM 残留、版本比较永不相等（每次全量重装）
+    [System.IO.File]::WriteAllText($VerFile, $RepoVersion, [System.Text.UTF8Encoding]::new($false))
 }
 
 # 提取模板文件中 "## 记录示例" 之后的全部内容（含该标题）
