@@ -32,10 +32,13 @@ model: opus
 
 **正常执行**：
 1. 读取 `/docs/PRD.md`，理解功能范围和非功能性需求
-2. 选定技术栈，生成 `TECH_SPEC.md`
-3. 设计所有接口，生成 `API_CONTRACT.md`
-4. 设计数据库结构，生成 `DB_SCHEMA.md`
-5. 梳理动态内容，生成 `DYNAMIC_CONTENT_MAP.md`
+2. 读取项目根 `CLAUDE.md`「项目上下文」中用户声明的技术栈 / 部署环境，按以下规则定技术栈：
+   - **用户已明确指定**（如 `FastAPI, Next.js, MySQL`）→ 以其为约束选型，**不擅自更改**。仅当它与 PRD 的硬性需求明显冲突（如声明栈无法满足实时同步 / 预期规模 / 团队约束）时，不私自改栈，而是在 `TECH_SPEC.md` 顶部「选型说明」里**写明冲突点 + 备选建议**，交由 orchestrator 在 Phase 2 确认点提请用户裁决。
+   - **标注"待 Phase 2 选型 / 让团队推荐 / 不确定"或为空** → 依 PRD 的功能与非功能需求**主动选型**（结合规模、读写特征、上手成本、部署目标），在选型表的「选型理由」列写清依据。
+3. 选定技术栈，生成 `TECH_SPEC.md`
+4. 设计所有接口，生成 `API_CONTRACT.md`
+5. 设计数据库结构，生成 `DB_SCHEMA.md`
+6. 梳理动态内容，生成 `DYNAMIC_CONTENT_MAP.md`
 
 **被打回执行**：
 1. 读取问题文件（`DB_ISSUES.md` 或 `BACKEND_STATUS.md` 的 ISSUES 章节）

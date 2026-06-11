@@ -19,17 +19,28 @@ description: 在当前目录初始化标准团队项目（交互式收集配置�
 
 ---
 
-### Step 3 — 交互式收集项目配置
+### Step 3 — 交互式收集项目配置（含按需求推荐技术栈）
 
 向用户提问（使用 AskUserQuestion 工具或直接对话）：
 
-**问题 1：** 项目的技术栈是什么？
-> 例：`Express.js, React, PostgreSQL` / `FastAPI, Next.js, MySQL` / `Django, Vue, Redis`
+**问题 1（先问，用于推荐）：** 这个项目大概要做什么？用一两句话描述即可（可留空）。
+> 例：`一个多人协作的待办事项 SaaS，要登录、团队空间、实时同步` / `内部数据看板，读多写少`
+> 记录为 PROJECT_BRIEF。
 
-**问题 2：** 部署环境是什么？
+**问题 2：** 技术栈想用什么？**如果还没想好，回答"让团队推荐"或直接留空。**
+> 已确定 → 例：`Express.js, React, PostgreSQL` / `FastAPI, Next.js, MySQL` / `Django, Vue, Redis`
+
+**问题 3：** 部署环境是什么？同样可回答"让团队推荐"或留空。
 > 例：`Docker + Nginx` / `Vercel` / `AWS ECS` / `Railway`
 
-收到答案后，记录为 TECH_STACK 和 DEPLOY_ENV。
+**技术栈推荐逻辑（关键）**：
+- 用户**已明确给出**技术栈 → 直接记为 TECH_STACK，**不擅自更改**。
+- 用户回答"让团队推荐 / 不确定 / 留空"：
+  - 若 **PROJECT_BRIEF 有内容** → 依据它**推荐 1 个主选方案 + 1 个备选方案**，每项一句话理由（结合规模、读写特征、团队上手成本、部署目标），用 AskUserQuestion 让用户**确认主选 / 改用备选 / 自定义**。确认后记为 TECH_STACK。
+  - 若 **PROJECT_BRIEF 也为空**（用户什么都没说）→ **不要瞎猜**。把 TECH_STACK 记为占位串 `待 software-architect 在 Phase 2 按 PRD 选型`，告知用户"等进入完整开发、产出 PRD 后由架构师按需求选型，你届时可确认"。
+- DEPLOY_ENV 同理：给了就用；让推荐则结合技术栈给 1 个建议供确认；都没有则记为 `待 Phase 2 选型`。
+
+收到/确认后，记录为 TECH_STACK 和 DEPLOY_ENV。
 
 ---
 
