@@ -124,17 +124,23 @@ bash scripts/install.sh
 pwsh .\scripts\install.ps1
 ```
 
-### 2. 在 Claude Code 里说一句话启动
+### 2. 进项目目录初始化
+
+打开 Claude Code，运行 `/team-init`。它会问"项目要做什么 + 技术栈 + 部署环境"。
+
+> 💡 **不确定用什么技术栈？** 技术栈那问直接回答 **"让团队推荐"**（或留空）——只要你描述了项目要做什么，团队就会按需求给出主选 + 备选方案（附理由）让你确认；完全没头绪也行，会留到完整开发的架构阶段按 PRD 选型。
+
+### 3. 在 Claude Code 里说一句话启动
 
 ```
 使用标准团队帮我开发一个 todo app
 ```
 
-orchestrator 会自动接管：扫描需求 → 调 product-manager 写 PRD → 给你看 PRD 让你确认 → 调 software-architect 写 API 契约 → ... → 一路跑到 Phase 11 出文档。
+orchestrator 会自动接管：扫描需求 → 调 product-manager 写 PRD → 给你看 PRD 让你确认 → 调 software-architect 选技术栈 + 写 API 契约（选型会让你拍板）→ ... → 一路跑到 Phase 11 出文档。
 
 详细安装/卸载/排错见 [INSTALL.md](INSTALL.md)。
 
-### 3. 看着它跑
+### 4. 看着它跑
 
 整个过程**只在 Phase 1 / Phase 2 后两次暂停**让你确认（PRD 范围 + API 契约），其他全自动。一个中等复杂度的应用从需求到部署完整跑完大约 **30-90 分钟**（取决于规模），主对话 token 消耗很低。
 
