@@ -6,6 +6,34 @@
 
 ---
 
+## [1.2.0] - 2026-06-11
+
+> 仓库不再公开，安装/升级不再依赖 Claude Code 内联网下载。把「升级」逻辑从 AI 命令迁移为本地脚本，精简 Claude Code 内命令集。
+
+### 变更（Changed）
+
+- **安装/升级迁移到本地脚本**：移除 `.claude/commands/team-install.md` 与 `.claude/commands/team-update.md` 两个 Claude Code 命令（它们原先会从 GitHub 克隆/下载，仓库非公开后不可用）。
+  - 新增 `scripts/update.ps1` / `scripts/update.sh`：从解压后的本地发布包运行，**不联网**。复用 `install` 刷新全局 agents/命令/知识库/workflow，并同步「运行时所在项目目录」CLAUDE.md 的「## 团队配置」段落（保留用户技术栈/部署环境字段）。可选传入项目目录参数。
+  - 首次安装继续用 `scripts/install.ps1` / `scripts/install.sh`。
+- **命令重命名**：`.claude/commands/kb-save.md` → `team-kb-save.md`，使 Claude Code 内团队命令以 `team-` 前缀排列在一起。同步更新 `agents/kb-curator.md` 中的 `/kb-save` 触发引用为 `/team-kb-save`。
+- **Claude Code 内仅保留两个命令**：`/team-init`（初始化项目）、`/team-kb-save`（沉淀知识库）。`install` 脚本的全局命令注册同步改为注册这两个。
+- 同步更新 `README.md`、`INSTALL.md`：安装/升级改为本地脚本流程，移除对已删命令与 `git clone`/`git pull` 升级方式的引用。
+- **删除冗余的 `scripts/team-init.ps1` / `scripts/team-init.sh`**：项目初始化统一在 Claude Code 内用 `/team-init` 命令完成。这两个脚本会生成**旧格式**的 `CLAUDE.md` 团队配置段落（缺少 v1.0.7 的 orchestrator 启动方式引导），属于有害冗余。`docs/USAGE.md` 中的对应引用同步改为 `/team-init`。
+- **install 脚本自动清理废弃命令**：`install.ps1` / `install.sh` 注册全局命令时，会移除老用户 `~/.claude/commands/` 下遗留的 `team-install.md`、`team-update.md`，避免误触已失效命令。
+
+### 升级方式
+
+下载并解压 v1.2.0 发布包，进入你的项目目录后运行解压目录里的升级脚本：
+
+```bash
+bash /path/to/解压目录/scripts/update.sh        # Mac/Linux/WSL
+pwsh C:\path\to\解压目录\scripts\update.ps1      # Windows
+```
+
+> 老用户的 `/team-update` 命令在升级后会被移除；之后升级一律走本地 `scripts/update.*`。
+
+---
+
 ## [1.1.2] - 2026-06-11
 
 > 修复 v1.1.x 经首次 audit-scan workflow 实战体检暴露的 3 个问题。

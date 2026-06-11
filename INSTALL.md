@@ -8,24 +8,33 @@
 
 ## 安装方式
 
-### 方式一：在 Claude Code 内用 Slash Command（推荐，全程不用离开 Claude Code）
+> ⚠️ **安装与升级都在本地脚本完成，不在 Claude Code 内运行。**
+> 仓库不再公开，请先下载并解压对应版本的发布包，再到解压目录运行脚本。
+
+### 方式一：脚本安装（推荐）
+
+**Mac / Linux / WSL：**
 
 ```bash
-# 1. 克隆仓库（仅首次）
-git clone https://github.com/trkjoy/claude-dev-ai-team.git
-
-# 2. 在仓库目录打开 Claude Code
+# 进入解压后的发布包目录
 cd claude-dev-ai-team
-claude .
-
-# 3. 在 Claude Code 里运行安装命令
-/team-install
+bash scripts/install.sh
 ```
 
-`/team-install` 会自动完成：
+**Windows（PowerShell）：**
+
+```powershell
+cd claude-dev-ai-team
+pwsh .\scripts\install.ps1
+# 或旧版 PowerShell（RemoteSigned 已足够运行本地脚本，不建议用 Bypass 全量绕过）：
+powershell -ExecutionPolicy RemoteSigned -File .\scripts\install.ps1
+```
+
+`install` 脚本会自动完成：
 - 安装 13 个 agent → `~/.claude/agents/`
 - 初始化知识库 → `~/.claude/team-memory/patterns/`
-- 注册全局命令 → `~/.claude/commands/`（之后 `/team-install` 和 `/team-init` 在所有项目可用）
+- 分发 workflow 模板 → `~/.claude/team-workflows/`
+- 注册全局命令 → `~/.claude/commands/`（`/team-init`、`/team-kb-save` 在所有项目可用）
 
 **安装后，后续流程全在 Claude Code 内完成：**
 
@@ -37,43 +46,11 @@ claude .
 使用标准团队开发 你的需求
 ```
 
-> **之后不再需要仓库目录。** `/team-install` 和 `/team-init` 已注册为全局命令，在任何项目里都可以直接用。
+> **之后不再需要解压目录**（升级时才会再次用到）。`/team-init` 已注册为全局命令，在任何项目里都可以直接用。
 
 ---
 
-### 方式二：脚本安装（安装后同样用 /team-init 初始化）
-
-**Mac / Linux / WSL：**
-
-```bash
-git clone https://github.com/trkjoy/claude-dev-ai-team.git
-cd claude-dev-ai-team
-bash scripts/install.sh
-```
-
-**Windows（PowerShell）：**
-
-```powershell
-git clone https://github.com/trkjoy/claude-dev-ai-team.git
-cd claude-dev-ai-team
-pwsh .\scripts\install.ps1
-# 或旧版 PowerShell（RemoteSigned 已足够运行本地脚本，不建议用 Bypass 全量绕过）：
-powershell -ExecutionPolicy RemoteSigned -File .\scripts\install.ps1
-```
-
-脚本与 `/team-install` 效果相同，额外将全局命令注册到 `~/.claude/commands/`。
-
-**安装完成后，进入项目目录，在 Claude Code 里运行：**
-
-```
-/team-init
-```
-
-交互式问两个问题（技术栈 + 部署环境），自动生成所有配置文件，无需手动编辑。
-
----
-
-### 方式三：只装部分 agent（高级用法）
+### 方式二：只装部分 agent（高级用法）
 
 ```bash
 # 只需要 product-manager 帮你写 PRD？
@@ -104,73 +81,41 @@ cp agents/product-manager.md ~/.claude/agents/
 
 ### 1. 什么时候需要升级
 
-作者在 GitHub 持续迭代推送新版本（agent 规则调整、新增 agent、bug 修复、知识库模板优化）。当你看到仓库有新 commit 或新 tag 时，建议同步本地。
+作者持续迭代新版本（agent 规则调整、新增 agent、bug 修复、知识库模板优化）。当你拿到新版本的发布包时，下载解压后在本地运行升级脚本同步。
 
 ### 2. 查看当前版本
 
 ```bash
-# 在仓库目录查看版本号
-cat VERSION
+# 在解压目录查看发布包版本号
+cat VERSION                       # Mac/Linux/WSL
+Get-Content VERSION               # Windows
 
-# 或查看最近 5 次提交
-git log --oneline -5
+# 查看已安装的全局版本
+cat ~/.claude/team-version        # Mac/Linux/WSL
+Get-Content $HOME\.claude\team-version   # Windows
 ```
 
-### 3. 升级方式
+### 3. 升级方式：`update` 脚本（推荐，唯一会同步项目 CLAUDE.md 的方式）
 
-**方式零：`/team-update`（推荐，唯一会同步项目 CLAUDE.md 的方式）**
-
-进入要升级的项目目录，在 Claude Code 内运行：
-
-```
-/team-update            # 升级到仓库最新版
-/team-update 1.0.7      # 升级到指定版本（也可用于回滚）
-```
-
-它会一次性刷新全局 13 个 agent，并把**当前项目** CLAUDE.md 的团队配置段落同步到目标版本（保留你的技术栈/部署环境字段）。
-
-> 首次使用前，需先用下面任一方式 `git pull && /team-install`，把 `/team-update` 注册到全局命令。
-
-下面三种方式只刷新全局 agents，**不会**更新项目 CLAUDE.md：
-
-#### 三种全局升级方式（与安装方式对应）
-
-**方式一：Claude Code 内升级（推荐）**
+下载并解压**目标版本**的发布包，**进入你要升级的项目目录**，运行解压目录里的 update 脚本：
 
 ```bash
-# 1. 进入克隆的仓库目录
-cd /path/to/claude-dev-ai-team    # Mac/Linux/WSL
-cd C:\path\to\claude-dev-ai-team  # Windows
-
-# 2. 拉取最新代码
-git pull
-
-# 3. 在当前目录打开 Claude Code
-claude .
-
-# 4. 在 Claude Code 内运行
-/team-install
-```
-
-**方式二：脚本升级**
-
-```bash
-# Mac/Linux/WSL
-cd /path/to/claude-dev-ai-team && git pull && bash scripts/install.sh
+# Mac / Linux / WSL（在项目目录下）
+bash /path/to/解压目录/scripts/update.sh
 ```
 
 ```powershell
-# Windows
-cd C:\path\to\claude-dev-ai-team; git pull; pwsh .\scripts\install.ps1
+# Windows（在项目目录下）
+pwsh C:\path\to\解压目录\scripts\update.ps1
 ```
 
-**方式三：手动升级（只更新部分 agent）**
+> 也可显式指定项目目录：`bash .../scripts/update.sh /path/to/your-project`。
 
-```bash
-git pull
-cp agents/orchestrator.md ~/.claude/agents/
-# 只复制你需要更新的 agent，其他保持不变
-```
+它会一次性完成两件事：
+1. **刷新全局**：更新 `~/.claude/` 下的 13 个 agent、命令、知识库（已存在不覆盖）、workflow 模板
+2. **同步项目**：把**当前项目** CLAUDE.md 的「## 团队配置」段落同步到发布包版本（保留你的技术栈/部署环境字段）
+
+> 若只想刷新全局、不动任何项目 CLAUDE.md，直接重跑 `scripts/install.sh` / `scripts/install.ps1` 即可。
 
 ### 4. 升级不影响什么（幂等保证）
 
@@ -180,12 +125,12 @@ cp agents/orchestrator.md ~/.claude/agents/
 - 项目目录里的 `.claude/team-state/`（`STATE.md`、`RETRY_LOG.md`、`DECISIONS.md`、`LEARNINGS.md`）
 - 知识库已有内容（`~/.claude/team-memory/patterns/` 下的累积条目）
 
-升级只刷新 `~/.claude/agents/` 和 `~/.claude/commands/` 里的 agent 规则与全局命令。
+`update` 脚本只刷新 `~/.claude/agents/`、`~/.claude/commands/`、`~/.claude/team-workflows/` 里的 agent 规则、全局命令与 workflow 模板，并按需同步当前项目 CLAUDE.md 的团队配置段落。
 
 ### 5. 升级后验证生效
 
 1. 重启 Claude Code（关闭后重新 `claude .`），确保命令列表重新加载
-2. 在 Claude Code 里输入 `/`，确认 `/team-install`、`/team-init` 在命令列表中
+2. 在 Claude Code 里输入 `/`，确认 `/team-init`、`/team-kb-save` 在命令列表中
 3. （可选）确认 agent 文件已更新：
 
 ```bash
@@ -219,9 +164,8 @@ rm -f ~/.claude/agents/orchestrator.md \
    ~/.claude/agents/reality-checker.md \
    ~/.claude/agents/technical-writer.md \
    ~/.claude/agents/kb-curator.md
-rm -f ~/.claude/commands/team-install.md \
-   ~/.claude/commands/team-init.md \
-   ~/.claude/commands/team-update.md
+rm -f ~/.claude/commands/team-init.md \
+   ~/.claude/commands/team-kb-save.md
 ```
 
 ```powershell
@@ -233,16 +177,16 @@ $a = "$HOME\.claude\agents"
 'kb-curator' | ForEach-Object {
     Remove-Item "$a\$_.md" -Force -ErrorAction SilentlyContinue
 }
-Remove-Item "$HOME\.claude\commands\team-install.md","$HOME\.claude\commands\team-init.md","$HOME\.claude\commands\team-update.md" -Force -ErrorAction SilentlyContinue
+Remove-Item "$HOME\.claude\commands\team-init.md","$HOME\.claude\commands\team-kb-save.md" -Force -ErrorAction SilentlyContinue
 ```
 
 ---
 
 ## 常见问题
 
-### Q: 运行 /team-install 没反应，或 Claude Code 找不到命令
+### Q: Claude Code 里找不到 /team-init 或 /team-kb-save 命令
 
-A: 先确认 `.claude/commands/team-install.md` 文件在仓库目录内存在，重启 Claude Code 让它重新加载命令列表。
+A: 先确认 `install` 脚本已成功运行、`~/.claude/commands/team-init.md` 与 `team-kb-save.md` 已生成，再重启 Claude Code 让它重新加载命令列表。注意：`/team-install`、`/team-update` 自 v1.2.0 起已移除，安装与升级请在本地运行 `scripts/install.*` / `scripts/update.*`。
 
 ### Q: PowerShell 报"脚本被禁止运行"
 
@@ -263,33 +207,6 @@ A: 不能。这套配置依赖 Claude Code 的 [Subagents 机制](https://docs.c
 
 A: 主对话消耗很低（几千 token）。orchestrator 派的子 agent 各自独立 session，完整中型项目合计约 **50-200k token**。
 
-### Q: 忘了仓库克隆在哪，怎么重新拉取更新？
-
-A: 重新克隆后直接运行安装命令，效果等同于升级（幂等）：
-```bash
-git clone https://github.com/trkjoy/claude-dev-ai-team.git
-cd claude-dev-ai-team
-bash scripts/install.sh  # 或在 Claude Code 内运行 /team-install
-```
-
 ### Q: 升级后 agent 行为变了，如何回滚到旧版本？
 
-A: 用 git checkout 切到指定 tag 或 commit，再重新安装：
-```bash
-git log --oneline    # 找到旧版本的 commit hash 或 tag
-git checkout v1.0.2  # 换成你要回滚的版本号
-bash scripts/install.sh
-```
-
-### Q: git pull 时提示冲突怎么办？
-
-A: 本地一般不应该修改仓库里的文件。直接强制重置为远端最新版本：
-```bash
-git fetch origin
-git reset --hard origin/main
-bash scripts/install.sh
-```
-
----
-
-有问题欢迎开 [Issue](https://github.com/trkjoy/claude-dev-ai-team/issues)。
+A: 下载并解压**旧版本**的发布包，在项目目录运行该旧包里的 `scripts/update.sh` / `scripts/update.ps1` 即可切回（脚本是幂等的，会用旧包内容覆盖全局 agents 与命令）。

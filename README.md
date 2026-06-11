@@ -10,11 +10,11 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blue.svg)](https://claude.com/claude-code)
-[![Version](https://img.shields.io/badge/Version-1.1.2-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.0-green.svg)](CHANGELOG.md)
 
-> 📢 **v1.1.1 仓库迁移**：仓库地址现已变更为 `https://github.com/trkjoy/claude-dev-ai-team`。所有安装/升级命令（`/team-install`、`/team-update` 等）的下载源已同步切换到新地址。**老用户请运行 `/team-update` 升级**，详见 [CHANGELOG.md](CHANGELOG.md)。
+> 📢 **v1.2.0 安装方式变更**：仓库不再公开，原先在 Claude Code 内运行的 `/team-install`、`/team-update` 两个命令已移除。现在请**下载并解压对应版本的发布包**，在本地运行脚本：首次安装用 `scripts/install.ps1` / `scripts/install.sh`，升级用 `scripts/update.ps1` / `scripts/update.sh`。Claude Code 内仅保留 `/team-init`（初始化项目）与 `/team-kb-save`（沉淀知识库）两个命令。详见 [INSTALL.md](INSTALL.md) 与 [CHANGELOG.md](CHANGELOG.md)。
 >
-> 🔐 **安全提示（信任边界）**：本仓库为 fork，远程安装/升级会从 GitHub `main` 拉取 agent 文件并安装为 `~/.claude/agents/` 下的**全局可信指令**，过程**不做完整性校验**。建议优先用「先 `git clone` 仓库、再在仓库目录运行 `/team-install`」的本地安装方式；升级时用 `/team-update <版本号>` 锁定到已知 tag，而非盲拉 `main`。安装前可自行 review 一遍 `agents/*.md` 内容。
+> 🔐 **安全提示（信任边界）**：agent 会被安装为 `~/.claude/agents/` 下的**全局可信指令**。安装脚本只读取你本地解压的发布包，不联网拉取；安装前可自行 review 一遍 `agents/*.md` 内容。
 >
 > 📢 **v1.0.7 架构级修复**：orchestrator 被作为 subagent 启动时无法派发下游团队（"can't dispatch further agents"）。现已明确——orchestrator 必须由 top-level 主会话亲自担任，只有下游 12 个 agent 才用 Task 派发。详见 [CHANGELOG.md](CHANGELOG.md)。
 
@@ -109,9 +109,16 @@ Phase 11  → technical-writer     → README + API_DOC
 
 ### 1. 装入 Claude Code
 
+下载并解压发布包后，在解压目录运行安装脚本（注册全局 agents、命令、知识库）：
+
 ```bash
-git clone https://github.com/trkjoy/claude-dev-ai-team.git
-cp claude-dev-ai-team/agents/*.md ~/.claude/agents/
+# Mac / Linux / WSL
+bash scripts/install.sh
+```
+
+```powershell
+# Windows
+pwsh .\scripts\install.ps1
 ```
 
 ### 2. 在 Claude Code 里说一句话启动

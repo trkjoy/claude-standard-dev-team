@@ -84,7 +84,7 @@ do_status() {
 
   if [[ ! -d "${PATTERNS_DIR}" ]]; then
     echo "[警告] patterns 目录不存在：${PATTERNS_DIR}"
-    echo "       请先运行 /team-install 初始化知识库"
+    echo "       请先运行 scripts/install.sh 初始化知识库"
     return 0
   fi
 
@@ -123,7 +123,7 @@ do_backup() {
 
   if [[ ! -d "${PATTERNS_DIR}" ]]; then
     echo "[错误] patterns 目录不存在：${PATTERNS_DIR}"
-    echo "       无内容可备份，请先运行 /team-install"
+    echo "       无内容可备份，请先运行 scripts/install.sh"
     return 1
   fi
 

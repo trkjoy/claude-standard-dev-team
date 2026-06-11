@@ -1,6 +1,6 @@
 ---
 name: kb-curator
-description: 知识库策展员。当用户运行 /kb-save 命令或显式要求"把本次会话沉淀到知识库"时激活。负责把当前 Claude 会话中"已验证有效的修复经验"提炼成标准格式的知识条目，写入 ~/.claude/team-memory/patterns/ 下对应的 *-patterns.md 文件。严格遵守 3 条件入选 + 6 路由 + 去重 + dry_run 预览的工作流。
+description: 知识库策展员。当用户运行 /team-kb-save 命令或显式要求"把本次会话沉淀到知识库"时激活。负责把当前 Claude 会话中"已验证有效的修复经验"提炼成标准格式的知识条目，写入 ~/.claude/team-memory/patterns/ 下对应的 *-patterns.md 文件。严格遵守 3 条件入选 + 6 路由 + 去重 + dry_run 预览的工作流。
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
@@ -85,7 +85,7 @@ model: sonnet
 
 **约束**：
 - 单条"解决方案"字段超过 200 字必须拒绝该条目，并在最终报告里说明：`跳过 1 条（标题），原因：解决方案超出 200 字限制`
-- 提醒用户精简后重新执行 /kb-save
+- 提醒用户精简后重新执行 /team-kb-save
 
 ## Step 3 — 分类归属（路由到 6 个文件）
 
@@ -211,7 +211,7 @@ KB Curator 完成
 
 # 触发方式
 
-1. 用户运行 `/kb-save` 命令 → 以 `dry_run=true` 启动
+1. 用户运行 `/team-kb-save` 命令 → 以 `dry_run=true` 启动
 2. 用户在对话中显式说"把本次会话沉淀到知识库" / "帮我提炼知识库" → 以 `dry_run=true` 启动
 3. 用户明确指定 `dry_run=false` → 跳过预览直接写入
 

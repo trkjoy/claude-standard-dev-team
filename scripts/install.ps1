@@ -283,9 +283,13 @@ function Install-Claude {
     # 4. 全局命令
     if (Test-Path $CommandsSrc) {
         New-Item -ItemType Directory -Force -Path $CommandsDest | Out-Null
-        Copy-Item (Join-Path $CommandsSrc 'team-install.md') $CommandsDest -Force
         Copy-Item (Join-Path $CommandsSrc 'team-init.md')    $CommandsDest -Force
-        Copy-Item (Join-Path $CommandsSrc 'team-update.md')  $CommandsDest -Force
+        Copy-Item (Join-Path $CommandsSrc 'team-kb-save.md') $CommandsDest -Force
+        # 清理 v1.2.0 已废弃的旧命令（老用户升级时自动移除孤立文件）
+        foreach ($stale in 'team-install.md','team-update.md') {
+            $sp = Join-Path $CommandsDest $stale
+            if (Test-Path $sp) { Remove-Item $sp -Force; Write-Host "  已移除废弃命令：$stale" -ForegroundColor Yellow }
+        }
         Write-Host "已注册全局命令 -> $CommandsDest" -ForegroundColor Green
     } else {
         Write-Host '  跳过命令注册（.claude\commands\ 目录不存在）'

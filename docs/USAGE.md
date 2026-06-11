@@ -30,8 +30,9 @@
 
 **第一步：全局安装（一次性）**
 
+下载并解压对应版本的发布包，进入解压目录运行：
+
 ```bash
-git clone https://github.com/trkjoy/claude-dev-ai-team.git
 cd claude-dev-ai-team
 bash scripts/install.sh
 ```
@@ -42,25 +43,20 @@ bash scripts/install.sh
 
 **第二步：在项目目录初始化（每个新项目做一次）**
 
-```bash
-cd 你的项目目录
-bash /path/to/claude-dev-ai-team/scripts/team-init.sh
-```
-
-脚本会交互式问两个问题：
+进入你的项目目录，打开 Claude Code，运行 `/team-init` 命令。它会交互式问两个问题：
 
 ```
-请回答以下两个问题（直接回车使用括号内的示例值）：
-
-  技术栈（例：Express.js, React, PostgreSQL）：  Express.js, React, PostgreSQL
-  部署环境（例：Docker + Nginx，或 Vercel）：    Docker + Nginx
+技术栈（例：Express.js, React, PostgreSQL）
+部署环境（例：Docker + Nginx，或 Vercel）
 ```
 
-填完即生成配置文件，**无需手动编辑任何文件**。
+填完即生成 `CLAUDE.md` 与 `.claude/` 配置，**无需手动编辑任何文件**。
+
+> 项目初始化统一在 Claude Code 内用 `/team-init` 完成（v1.2.0 起不再提供 `team-init.sh`/`team-init.ps1` 脚本）。
 
 **第三步：开始使用**
 
-在项目目录打开 Claude Code，输入：
+在项目目录的 Claude Code 里，输入：
 
 ```
 使用标准团队开发 你的需求
@@ -74,16 +70,17 @@ bash /path/to/claude-dev-ai-team/scripts/team-init.sh
 
 **第一步：全局安装（一次性）**
 
+下载并解压对应版本的发布包，进入解压目录运行：
+
 ```powershell
-git clone https://github.com/trkjoy/claude-dev-ai-team.git
 cd claude-dev-ai-team
 pwsh .\scripts\install.ps1
 ```
 
-或 Windows PowerShell：
+或 Windows PowerShell（RemoteSigned 已足够运行本地脚本，不建议用 Bypass 全量绕过）：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
+powershell -ExecutionPolicy RemoteSigned -File .\scripts\install.ps1
 ```
 
 `install.ps1` 自动完成：
@@ -92,21 +89,16 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 
 **第二步：在项目目录初始化（每个新项目做一次）**
 
-```powershell
-cd 你的项目目录
-pwsh "C:\path\to\claude-standard-dev-team\scripts\team-init.ps1"
-```
-
-脚本会交互式问两个问题：
+进入你的项目目录，打开 Claude Code，运行 `/team-init` 命令。它会交互式问两个问题：
 
 ```
-请回答以下两个问题（直接回车使用括号内的示例值）：
-
-  技术栈（例：Express.js, React, PostgreSQL）：  Express.js, React, PostgreSQL
-  部署环境（例：Docker + Nginx，或 Vercel）：    Docker + Nginx
+技术栈（例：Express.js, React, PostgreSQL）
+部署环境（例：Docker + Nginx，或 Vercel）
 ```
 
-填完即生成配置文件，**无需手动编辑任何文件**。
+填完即生成 `CLAUDE.md` 与 `.claude\` 配置，**无需手动编辑任何文件**。
+
+> 项目初始化统一在 Claude Code 内用 `/team-init` 完成（v1.2.0 起不再提供 `team-init.sh`/`team-init.ps1` 脚本）。
 
 > **ExecutionPolicy 报错？** 用管理员 PowerShell 运行一次：
 > ```powershell
@@ -247,11 +239,7 @@ npm install -g @openai/codex
 export OPENAI_API_KEY="your-key"
 ```
 
-只需克隆仓库获取 agent prompt 文件：
-
-```bash
-git clone https://github.com/trkjoy/claude-dev-ai-team.git
-```
+只需下载并解压发布包，获取其中的 agent prompt 文件（`claude-dev-ai-team/agents/*.md`）即可。
 
 ### 手动多步调用（示例）
 
