@@ -207,6 +207,8 @@ http.interceptors.request.use(config => {
 })
 ```
 
+> ⚠️ **token 存储安全提示**：上例用 `localStorage` 存 token 仅为最简示意。`localStorage` 对页面内所有 JS 可读，一旦存在 XSS 即可被全量窃取（CWE-922 / OWASP A02）。**优先方案**：后端以 `Set-Cookie: HttpOnly; Secure; SameSite=Strict` 下发 token，前端改 `axios` `withCredentials: true`、移除手动读取与注入 `Authorization` 的逻辑，由浏览器自动携带。若业务确需前端读取 token（如多域），务必配套严格 CSP 降低 XSS 可利用面。此选择涉及后端，须与 `API_CONTRACT.md` 的鉴权约定一致。
+
 ## env 文件必须包含
 
 ```

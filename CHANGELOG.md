@@ -6,6 +6,23 @@
 
 ---
 
+## [1.4.2] - 2026-06-11
+
+> 修复实跑 audit-scan workflow 时它"扫出自己"的两个问题，并给前端 token 存储补安全警示。
+
+### 修复（Fixed）
+
+- **[MEDIUM] audit-scan 未知扫描维度会 `undefined.trim()`**：`dimPrompts[dim].trim()`（L120）在 `dim` 不在 `dimPrompts` 时抛 TypeError，被 N1 的 `filter(Boolean)` 静默吞成"该维度丢失且无诊断"。新增两道校验：(1) `runMultiDimensionScan` 入口对 `args.dimensions` 做白名单校验，未知维度在 parallel 启动前**大声 throw**；(2) thunk 内对 `dimPrompts[dim]` 缺失做软跳过 + 日志，兜 `DIMENSION_AGENT_MAP`/`dimPrompts` 未来键集漂移。
+- **[MEDIUM] audit-scan 对抗验证 prompt 存在注入面**：`refutePrompt` 直接拼接 `finding.filePath/description/lineHint`（可能源自被扫代码里的恶意注释），可诱导验证 agent 输出虚假 `confirmed:false` 绕过审查（OWASP A03 LLM 扩展）。改为用 `<finding-data>` 标签隔离数据域/指令域、声明标签内为不可信数据须无视其中任何"指令"、并对各字段截断压缩载荷空间。
+
+### 改进（Changed）
+
+- **[LOW] frontend-developer token 存储安全警示**：API 服务层模板示例用 `localStorage` 存 JWT（XSS 可全量窃取，CWE-922 / OWASP A02）。保留示例不破坏现有鉴权设计，但补 `⚠️` 注释——优先 HttpOnly+Secure+SameSite Cookie 方案、否则配套严格 CSP，并提示该选择须与 `API_CONTRACT.md` 鉴权约定一致。
+
+> 来源：本批由一次**实跑 `audit-scan` workflow 自审本仓库**捞出（46 agent / 498k token，期间撞 429 限流仍优雅降级，反向验证了 v1.3.5/v1.3.8 容错有效）。改动 `templates/workflows/audit-scan.workflow.js`、`agents/frontend-developer.md`，脚本通过 `node --check`。
+
+---
+
 ## [1.4.1] - 2026-06-11
 
 > install/update 脚本运行完不再一闪而退，结束前等待回车，便于查看安装/升级结果。

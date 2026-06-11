@@ -7,3 +7,6 @@ node_modules/
 
 # 本地个人配置：含本机绝对路径与个人放行项，不应入库
 .claude/settings.local.json
+
+# 临时截图等本地产物
+screenshot-*.png
