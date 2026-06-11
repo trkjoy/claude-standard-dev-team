@@ -647,8 +647,12 @@ STEP 4 - 决策：同 Phase 5 逻辑，分流规则：
   - [具体问题 + 文件:行号]
 🟡 建议修复：[n] 项
 🔒 安全问题：高危 n / 中危 n / 低危 n
+⚠️ 高危待人工复核：[n] 项（仅 Workflow 下沉时出现）
+  - [具体问题 + 文件:行号 + 为何未获全票确认]
 ✅ 未发现问题的检查项：[列出]
 ```
+
+> ⚠️ **「高危待人工复核」栏的来源**：启用 audit-scan workflow 时，对抗式验证对 critical/high 采取"任一票确认即保留"，凡未获全票（`needsHumanReview=true`）的高危项会在返回 `summary.needsHumanReview` 里计数。orchestrator **必须**把这些项单列到本栏交用户判断，**不得**因为它们没凑够票数就并入"未发现问题"或静默丢弃——这正是 workflow 最该被看见的输出。未启用 workflow 的串行 Audit 无此栏。
 
 **无 Blocker → 汇报完成，等待用户指令**
 **有 Blocker 且用户说"修复" → 进入 Audit-Fix 流程**
@@ -755,7 +759,7 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 1. `STATE.md` 不存在 → 从 Phase 0 开始，创建状态目录
 2. `Current Phase` 不是 `Complete` → 读取 `Next Action`，从该动作继续
 3. `Last Result` 为 `WAITING_USER_CONFIRMATION` → 展示 `DECISIONS.md` 摘要，等待"继续"
-4. `Retry Count >= 3` → 展示 `RETRY_LOG.md` 卡点报告，不自动继续
+4. `Retry Count >= 3`，或 `Batch Retry Counts` 中**任一任务** >= 3 → 展示 `RETRY_LOG.md` 卡点报告，不自动继续（并行批次只就超限的那几个任务卡点，其余 PASS 任务照常推进）
 5. 状态字段缺失 → 读取 docs/ 和 project-tasks/ 推断阶段，向用户确认
 
 ## 状态写入格式
@@ -766,10 +770,13 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 - Current Task: 当前任务 ID 或 None
 - Last Agent: 上一个被调用的 agent
 - Last Result: RUNNING / PASS / FAIL / BLOCKED / WAITING_USER_CONFIRMATION
-- Retry Count: 当前任务重试次数
+- Retry Count: 当前任务重试次数（串行单任务用）
+- Batch Retry Counts: 并行批次各任务独立计数，形如 `TASK-B01:2, TASK-B03:1`（无并行批次时填 None）
 - Next Action: 下一步动作描述
 - Updated At: 当前日期
 ```
+
+> **并行批次的计数表达**：1.3.1 规定并行失败任务各自维护独立重试计数，单个 `Retry Count` 标量表达不了。因此并行批次进行中**必须**用 `Batch Retry Counts` 行逐任务记录（如 `TASK-B01:2, TASK-B03:1`），`Current Task` 填整批标识或 `BATCH`；串行单任务仍用 `Retry Count`。恢复时以 `Batch Retry Counts` 为准判断哪些任务已超限。
 
 ## 状态写入时机（义务，非可选）
 

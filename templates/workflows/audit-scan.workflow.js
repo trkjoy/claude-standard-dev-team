@@ -145,8 +145,10 @@ ${targets.join("\n")}
     });
 
     // 明确取 findings.findings 数组，避免 spread 整个返回对象时
-    // agent 自填的 dimension 字段覆盖外层硬编码的 dim（控制字段污染）
-    return { dimension: dim, findings: findings.findings ?? [] };
+    // agent 自填的 dimension 字段覆盖外层硬编码的 dim（控制字段污染）。
+    // 容错：扫描 agent 死亡 / schema 失败时 findings 为 null，用可选链兜底，
+    // 否则 `findings.findings` 抛错 → thunk 抛 → parallel 把整个维度降为 null。
+    return { dimension: dim, findings: findings?.findings ?? [] };
   });
 
   // parallel 有屏障：全部维度扫描完成后才进入下一阶段
@@ -163,9 +165,11 @@ ${targets.join("\n")}
 async function runAdversarialVerification(allFindings, confirmThreshold) {
   phase("对抗式验证");
 
-  // 将所有维度的发现展平为一个列表，附加维度标签
+  // 将所有维度的发现展平为一个列表，附加维度标签。
+  // filter(Boolean)：parallel 屏障会把抛错的扫描 thunk 降为 null，
+  // 不过滤则迭代到 null 时 `scanResult.findings` 抛错、且在 parallel 之外无 catch，整条审计崩溃。
   const flatFindings = [];
-  for (const scanResult of allFindings) {
+  for (const scanResult of allFindings.filter(Boolean)) {
     for (const finding of scanResult.findings ?? []) {
       flatFindings.push({ ...finding, dimension: scanResult.dimension });
     }
@@ -356,7 +360,7 @@ log(`Audit 完成 — 已确认问题 ${confirmedIssues.length} 条`);
 
 return {
   summary: {
-    totalFindingsBeforeVerification: scanResults.reduce((n, r) => n + (r.findings?.length ?? 0), 0),
+    totalFindingsBeforeVerification: scanResults.filter(Boolean).reduce((n, r) => n + (r.findings?.length ?? 0), 0),
     confirmedIssues: confirmedIssues.length,
     bySeverity: {
       critical: confirmedIssues.filter((i) => i.severity === "critical").length,

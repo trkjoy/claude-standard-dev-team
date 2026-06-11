@@ -6,6 +6,24 @@
 
 ---
 
+## [1.3.8] - 2026-06-11
+
+> 第四轮编排逻辑审计：补 audit-scan 扫描侧的 null 崩溃（1.3.5 只加固了验证侧），并接通两处被吞掉的信号。
+
+### 修复（Fixed）
+
+- **[HIGH] audit-scan 扫描侧 null 不容错，单个扫描 agent 死亡会崩溃整条审计**：`runMultiDimensionScan` 的 thunk 在 `agent()` 返回 null 时 `findings.findings` 抛错 → `parallel` 把该维度降为 null；`runAdversarialVerification` 又未 `filter(Boolean)` 直接迭代 → `scanResult.findings` 在 parallel 屏障之外二次抛错、无 catch、整个 workflow 崩。1.3.5 的"全程容错"只覆盖了对抗验证侧，扫描侧三处（thunk 返回、展平迭代、summary reduce）漏网。已全部补 `?.` / `filter(Boolean)`。
+- **[MEDIUM] audit-scan 的 `needsHumanReview` 信号在 Audit 汇报格式里无处安放**：workflow 对 critical/high 采"任一票确认即保留"并标记未全票的高危项，但 orchestrator 模板 B 汇报格式没有对应栏，信号默认被吞。汇报格式新增「⚠️ 高危待人工复核」栏，并强制 orchestrator 单列、不得并入"未发现问题"。
+- **[MEDIUM] STATE.md 单 `Retry Count` 标量无法表达并行批次各任务独立计数**：与 1.3.1「并行失败任务各自维护独立重试计数」自相矛盾，断点续跑在并行场景失真。新增 `Batch Retry Counts` 字段（形如 `TASK-B01:2, TASK-B03:1`），恢复规则 #4 改为"任一任务 >=3 即就该任务卡点、其余照常推进"；init 模板 STATE.md 同步加该字段。
+
+### 已验证为干净（无需改动）
+
+- **model 字段体检（上轮 L3）**：14 个 agent 全为 `opus`（orchestrator / software-architect / reality-checker）或 `sonnet`，1.3.4/1.3.5 修掉两个 haiku 倒挂后无新增残留。
+
+> 本批改动：`templates/workflows/audit-scan.workflow.js`、`agents/orchestrator.md`、`templates/memory/team-state/STATE.md`。脚本已通过 `node --check`。M3（功能新增增量拆解范围）仍为待实跑验证的推断项，本批未动。
+
+---
+
 ## [1.3.7] - 2026-06-11
 
 > 第三轮编排逻辑审计：补两条「读取端有、写入端没有」的断层，并对齐串行/并行两条 Dev-QA 路径的纪律。
