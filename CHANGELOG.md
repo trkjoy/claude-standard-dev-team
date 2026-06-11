@@ -6,6 +6,20 @@
 
 ---
 
+## [1.3.4] - 2026-06-11
+
+> 第四批修复：修好"坏掉的验收闸口"，统一技术栈占位串，收紧 team-init 生成的安全门。
+
+### 修复（Fixed）
+
+- **[HIGH] testing-evidence-collector 是未本地化的外部模板，验收闸口实际失效**：该 agent（orchestrator 多个 Phase 的 QA 验收闸口）残留了 Laravel + 营销落地页套路：强制流程第一条命令调用**全仓不存在的** `./qa-playwright-capture.sh`、`ls resources/views/*.blade.php`、`grep "luxury\|premium\|glass\|morphism"`、端口写死 8000、末尾指向不存在的 `ai/agents/qa.md`，且 `model: haiku` 做视觉判断、frontmatter 无 `tools`。已整体本地化到本团队技术栈：现实核查命令改为 curl `/api/health`(端口取 TECH_SPEC)+ 实际产出检查 + 接口/测试取证；明确"无截图工具时做功能性取证并如实标注、缺证据倾向 NEEDS WORK 而非凭空 PASS"；去掉营销词与 Laravel 残留；`model` 升 sonnet；补 `tools: Read, Write, Bash, Glob, Grep`（不给 Edit，QA 不改代码）。
+- **[HIGH] 技术栈占位串三处不一致（v1.3.0 引入的回归）**：team-init 写 `待 software-architect 在 Phase 2 按 PRD 选型`，而 software-architect / orchestrator 识别的是 `待 Phase 2 选型`——前者不含后者子串，架构师会把整条占位串误当"用户已指定的技术栈"、不主动选型，Phase 2 自动选型失效。三处统一为确切字符串 `待 Phase 2 选型`（TECH_STACK 与 DEPLOY_ENV 同串）。
+- **[MEDIUM] team-init 生成的 settings.json 绕过安全门**：原为整体放行 `"Bash"`，比 `templates/memory/settings.json` 的命令前缀白名单宽松得多（等于放行 `git push`/`rm`/`docker`/`sudo`）。改为内嵌与模板一致的细粒度白名单，并注明不可逆/对外动作故意不放行、由 orchestrator 安全确认点逐次把关。
+
+> 本批改动：`agents/testing-evidence-collector.md`、`.claude/commands/team-init.md`。两文件「团队配置」块仍字节一致。
+
+---
+
 ## [1.3.3] - 2026-06-11
 
 > 第三批修复：消费断层、文档一致性、Workflow 集成边界。把"文档说有、实际没有"的断点对齐到真实行为。

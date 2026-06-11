@@ -37,8 +37,8 @@ description: 在当前目录初始化标准团队项目（交互式收集配置�
 - 用户**已明确给出**技术栈 → 直接记为 TECH_STACK，**不擅自更改**。
 - 用户回答"让团队推荐 / 不确定 / 留空"：
   - 若 **PROJECT_BRIEF 有内容** → 依据它**推荐 1 个主选方案 + 1 个备选方案**，每项一句话理由（结合规模、读写特征、团队上手成本、部署目标），用 AskUserQuestion 让用户**确认主选 / 改用备选 / 自定义**。确认后记为 TECH_STACK。
-  - 若 **PROJECT_BRIEF 也为空**（用户什么都没说）→ **不要瞎猜**。把 TECH_STACK 记为占位串 `待 software-architect 在 Phase 2 按 PRD 选型`，告知用户"等进入完整开发、产出 PRD 后由架构师按需求选型，你届时可确认"。
-- DEPLOY_ENV 同理：给了就用；让推荐则结合技术栈给 1 个建议供确认；都没有则记为 `待 Phase 2 选型`。
+  - 若 **PROJECT_BRIEF 也为空**（用户什么都没说）→ **不要瞎猜**。把 TECH_STACK 记为占位串 `待 Phase 2 选型`（**必须用这个确切字符串**，software-architect 据此识别并在 Phase 2 按 PRD 主动选型），告知用户"等进入完整开发、产出 PRD 后由架构师按需求选型，你届时可确认"。
+- DEPLOY_ENV 同理：给了就用；让推荐则结合技术栈给 1 个建议供确认；都没有则同样记为确切占位串 `待 Phase 2 选型`。
 
 收到/确认后，记录为 TECH_STACK 和 DEPLOY_ENV。
 
@@ -90,18 +90,37 @@ description: 在当前目录初始化标准团队项目（交互式收集配置�
 
 ### Step 5 — 生成 .claude/settings.json
 
-若 `.claude/settings.json` 不存在，用 Write 工具生成：
+若 `.claude/settings.json` 不存在，用 Write 工具生成（**按命令前缀白名单，不要整体放行 `Bash`**——不可逆/对外动作如 `git push`、`rm`、`docker`、`sudo` 故意不在白名单，由 orchestrator 的安全确认点逐次把关）：
 
 ```json
 {
   "permissions": {
     "allow": [
-      "Task",
       "Read",
-      "Write",
       "Glob",
-      "Bash",
-      "Grep"
+      "Grep",
+      "Task",
+      "Write",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)",
+      "Bash(node *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(pip *)",
+      "Bash(pytest*)",
+      "Bash(go *)",
+      "Bash(cargo *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(git restore*)",
+      "Bash(mkdir *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(echo *)"
     ]
   }
 }
