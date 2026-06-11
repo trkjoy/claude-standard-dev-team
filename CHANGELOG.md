@@ -6,6 +6,21 @@
 
 ---
 
+## [1.3.7] - 2026-06-11
+
+> 第三轮编排逻辑审计：补两条「读取端有、写入端没有」的断层，并对齐串行/并行两条 Dev-QA 路径的纪律。
+
+### 修复（Fixed）
+
+- **[HIGH] `LEARNINGS.md` 只读不写（与 1.3.1 同类断层，漏网一条）**：Phase 11.5 `kb-curator` 把 `LEARNINGS.md` 当输入消费，但 orchestrator 全文无任何写入触发点——「状态写入时机」章节只强制写 `STATE.md`，该文件恒为空，知识写回实际只剩 `RETRY_LOG`。已在写入义务中新增：任务由 FAIL 经重试转 PASS 时，必须把「失败原因 + 解法 + 文件」追加一条到 `LEARNINGS.md`。
+- **[HIGH] 并行 Dev-QA Loop 静默丢失串行路径的失败升级分流**：`team-dev-loop.workflow.js` 失败后固定派回**同一个**实现 agent，契约/字段类失败永远到不了 software-architect（串行路径 STEP 4 会按关键词升级）。已补 `resolveFixAgentType`——第 2 次起按失败原因关键词升级（字段/契约→software-architect、连接/数据库→devops-automator、鉴权/token→security-engineer）。同时在 orchestrator Phase 5/6 下沉说明中**诚实标注**：并行模式不强制 STEP 0 TDD（RED 先行）与 STEP 2 自验证，以吞吐换纪律，复杂/契约未定的批次宁可走串行。
+- **[MEDIUM] 知识闭环只在成功时关闭**：Phase 11.5 限定「仅 READY 后执行」，导致卡死/判 NEEDS WORK（踩坑最多）的项目里 `RETRY_LOG`/`LEARNINGS` 教训全部白扔。新增 Phase 11.5-F——长链路任务进入终态失败时，追加派 `kb-curator` 只收割已验证有效的失败→解法条目（不要求项目整体 READY）。
+- **[MEDIUM] `team-dev-loop` 脚本无前后端混传屏障**：脚本用无屏障 `pipeline`，若同次调用混入 backend+frontend 任务，前端会在后端 API 实现前并行跑，违背「前端须等后端跑通再联调」。入口新增单 layer 断言，混传即抛错，强制按 Phase 5/6 分两次调用。
+
+> 本批改动：`agents/orchestrator.md`、`templates/workflows/team-dev-loop.workflow.js`。脚本已通过 `node --check`。来源为用户发起的第三轮编排审计，4 条均有 `文件:行号` 实证（M3 功能新增增量拆解范围、L3 model 字段体检为推断/待验项，本批未动）。
+
+---
+
 ## [1.3.6] - 2026-06-11
 
 > 收尾：清掉两轮审计剩下的两个纯文案 LOW。

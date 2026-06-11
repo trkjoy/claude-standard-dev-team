@@ -42,6 +42,26 @@ function resolveImplementAgentType(layer) {
 }
 
 // ─────────────────────────────────────────────
+// 工具函数：失败升级分流（对齐串行 Phase 5/6 STEP 4 的关键词分流）
+//   第 1 次失败 → 仍派原实现 agent 自修；
+//   第 2 次起   → 按失败原因关键词升级：
+//     字段/契约/schema → software-architect 复查契约
+//     连接/数据库/超时   → devops-automator
+//     鉴权/token/权限    → security-engineer
+//     其余             → 原实现 agent
+// 注：契约类问题由 software-architect 改契约后，仍需原实现 agent 据新契约重写；
+//     本脚本受 pipeline 结构所限只做一次升级派发，复杂契约返工仍应回流 orchestrator 串行处理。
+// ─────────────────────────────────────────────
+function resolveFixAgentType(failReason, implAgent, attempt) {
+  if (attempt <= 1) return implAgent;
+  const r = (failReason ?? "").toLowerCase();
+  if (/字段|契约|schema|field|contract/.test(r)) return "software-architect";
+  if (/连接|数据库|超时|connection|timeout|database/.test(r)) return "devops-automator";
+  if (/鉴权|token|权限|auth|unauthorized|forbidden/.test(r)) return "security-engineer";
+  return implAgent;
+}
+
+// ─────────────────────────────────────────────
 // 单任务流水线（实现 → QA，内置重试）
 // pipeline 无屏障，每个任务项目独立流动。
 // ─────────────────────────────────────────────
@@ -170,9 +190,12 @@ ${attempt > 1 ? `【上次失败原因】\n${lastVerifyResult?.failReason ?? "�
     // FAIL：若还有重试机会，先派实现 agent **按失败原因真正修复**（而非重验同一份代码），
     // 用修复后的结果再进入下一轮验证——否则重试只是空转。
     if (attempt < MAX_ATTEMPTS) {
-      log(`[${task.id}] QA FAIL，派 ${implAgent} 按失败原因修复后再验。原因：${verifyResult.failReason}`);
+      // 第 1 次失败派原实现 agent 自修；第 2 次起按失败原因升级分流（对齐串行路径）
+      const fixAgent = resolveFixAgentType(verifyResult.failReason, implAgent, attempt);
+      const escalated = fixAgent !== implAgent;
+      log(`[${task.id}] QA FAIL，派 ${fixAgent}${escalated ? "（已按失败原因升级）" : ""} 修复后再验。原因：${verifyResult.failReason}`);
       const fixPrompt = `
-你是团队 ${implAgent}，上一版实现未通过 QA，请**按失败原因修复**（只改必要处，不重写）。
+你是团队 ${fixAgent}，上一版实现未通过 QA，请**按失败原因修复**（只改必要处，不重写）。${escalated ? "\n（本次为升级处理：若属契约/字段问题，请先修正契约定义，再据此说明实现该如何对齐。）" : ""}
 
 【任务编号】${task.id}
 【任务描述】
@@ -197,7 +220,7 @@ IMPL_SUMMARY: <一句话描述修复了什么，包含关键文件路径>
       const fixResult = await agent(fixPrompt, {
         label: `修复-${task.id}-attempt${attempt}`,
         phase: "实现阶段",
-        agentType: implAgent,
+        agentType: fixAgent,
         schema: {
           type: "object",
           properties: {
@@ -231,6 +254,20 @@ IMPL_SUMMARY: <一句话描述修复了什么，包含关键文件路径>
 
 log("Dev-QA Loop 并行流水线启动");
 log(`任务总数：${args.length}`);
+
+// ─────────────────────────────────────────────
+// 前后端混传屏障（M4）：
+// pipeline 无屏障、任务互不等待。若同一次调用混入 backend + frontend 任务，
+// 前端任务会在后端 API 尚未实现时就并行跑——违背「前端须等后端真跑通才联调」的设计哲学。
+// 因此强制单次调用只能是单一 layer；orchestrator 应按 Phase 5 / Phase 6 分两次调用。
+// ─────────────────────────────────────────────
+const layers = new Set(args.map((t) => t.layer ?? "backend"));
+if (layers.size > 1) {
+  throw new Error(
+    `team-dev-loop: 单次调用不得混传多个 layer（收到：${[...layers].join(", ")}）。` +
+    `请按 Phase 5（backend）/ Phase 6（frontend）分两次调用，确保后端 API 先跑通再做前端联调。`
+  );
+}
 
 // args 即调用方传入的任务清单数组（格式见文件顶部注释）
 const results = await pipeline(

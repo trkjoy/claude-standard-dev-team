@@ -443,6 +443,8 @@ project-tasks/
 ### Phase 5：后端实现（Dev-QA Loop）
 
 > **可选 Workflow 下沉**：若后端接口数 ≥5 且用户已在 Step 1.6 确认启用，可将 Dev-QA Loop 下沉为并行 workflow（orchestrator 提示 → 用户确认 → 跑 workflow → 结果回 orchestrator 验收），复用 `backend-architect` + `testing-evidence-collector`。未启用时保持下方串行流程不变。
+>
+> ⚠️ **并行 vs 串行的纪律差异（启用前须知）**：并行 workflow 走「实现 → QA → 按失败原因升级修复 → 再验」，**已对齐**串行的失败升级分流（字段/契约→software-architect、连接→devops、鉴权→security）；但它**不强制** STEP 0 的 `/test-driven-development`（RED 先行）与 STEP 2 的 `/verification-before-completion`。即并行模式以吞吐换纪律。对**契约稳定、接口同质**的批量实现可接受；若该批次接口逻辑复杂或契约未定，宁可走串行保留 TDD 闭环。
 
 **逐任务执行**，每个任务：
 ```
@@ -476,6 +478,8 @@ STEP 4 - 决策：
 ### Phase 6：前端实现（Dev-QA Loop）
 
 > **可选 Workflow 下沉**：若前端页面数 ≥5 且用户已确认启用，可将每页面的 Dev-QA Loop 下沉为并行 workflow（orchestrator 提示 → 用户确认 → 跑 workflow → 结果回 orchestrator 验收），复用 `frontend-developer` + `testing-evidence-collector`。未启用时保持下方串行流程不变。
+>
+> ⚠️ **并行 vs 串行的纪律差异（启用前须知）**：同 Phase 5——并行 workflow 已对齐失败升级分流（CSS/路径硬编码、字段问题等按原因改派），但**不强制** STEP 0 TDD（RED 先行）与 STEP 2 自验证。以吞吐换纪律，复杂交互页面宁可走串行。
 
 **逐任务执行**，每个任务：
 ```
@@ -587,6 +591,21 @@ STEP 4 - 决策：同 Phase 5 逻辑，分流规则：
 ```
 
 > ⚠️ orchestrator 只负责收集来源文件并派发 `kb-curator`，**不自行写用户级知识库**——写 `~/.claude/team-memory/patterns/` 是 kb-curator 的专属职责，复用它与 `/team-kb-save` 同一套筛选/去重逻辑，避免两条路径口径冲突、重复或污染格式。
+
+### Phase 11.5-F：失败终态的知识收割（卡点 / NEEDS WORK 收尾时执行）
+
+> 知识闭环不能只在成功时关闭。**踩坑最多的恰恰是没跑到 READY 的项目**——若只在 READY 后写回，卡死/判 NEEDS WORK 的项目里 `RETRY_LOG.md`、`LEARNINGS.md` 攒下的已验证教训会全部白扔。
+
+当长链路任务进入**终态失败**（重试超限卡点、或 reality-checker 判 NEEDS WORK 且用户决定收尾）时，在向用户报告卡点后**追加一步**：
+
+```
+调用 kb-curator（dry_run=false）
+  输入：RETRY_LOG.md、LEARNINGS.md（仅此次已验证有效的失败→解法条目）
+  要求：同 Phase 11.5 的「3 条件硬筛 + 6 路由 + 去重」——只收已被实际验证过的教训，
+        未验证的猜测/半成品不写回；其余约束（orchestrator 不自写 patterns/）一致。
+```
+
+> 与 Phase 11.5 的区别：来源只取 RETRY_LOG / LEARNINGS（不含 BACKEND_STATUS 等成功产出），且不要求项目整体 READY。仅长链路任务适用；单任务 / 纯文档不引入。
 
 ---
 
@@ -757,6 +776,7 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 > ⚠️ 没有写入点，断点续跑就是空转。担任 orchestrator 时**必须**在以下时刻写回 `STATE.md`，否则恢复规则永远读到初始值：
 > - **每个 Phase 开始时**：更新 `Current Phase` / `Next Action` / `Last Result=RUNNING`。
 > - **每次 STEP D 决策后**：更新 `Current Task` / `Last Result`（PASS/FAIL）/ `Retry Count`。
+> - **任务由 FAIL 经重试转 PASS 时**：把「失败原因 + 最终解法 + 涉及文件」追加一条到 `LEARNINGS.md`（一行一条即可）。这是 Phase 11.5 `kb-curator` 知识写回的**唯一来源之一**——不写则该来源恒为空，知识沉淀只剩 `RETRY_LOG`。
 > - **每个人工确认点暂停时**：`Last Result=WAITING_USER_CONFIRMATION`，并把待确认要点写入 `DECISIONS.md`。
 > - **卡点暂停时**：`Last Result=BLOCKED` + 写 `RETRY_LOG.md`。
 > 仅长链路任务（完整项目 / 大规模迁移 / 多轮 Audit-Fix）强制；单任务 / Hotfix / 纯文档不要求。
