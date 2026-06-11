@@ -93,7 +93,7 @@ else
       { print }
     ' "$CLAUDE_MD" > "$tmp"
     mv "$tmp" "$CLAUDE_MD"
-    echo "  ✅ 已同步 CLAUDE.md 团队配置段落（保留技术栈/部署环境字段）"
+    echo "  ✅ 已同步 CLAUDE.md 团队配置段落（仅替换此段；项目上下文等其它段落含技术栈/部署环境原样保留）"
     PROJECT_MSG="已更新团队配置段落"
   fi
 fi

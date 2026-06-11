@@ -107,7 +107,7 @@ if (-not (Test-Path $claudeMd)) {
             $new    = @($before) + @($tplBlock) + @($after)
             $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
             [System.IO.File]::WriteAllText($claudeMd, (($new -join "`n") + "`n"), $utf8NoBom)
-            Write-Host "  已同步 CLAUDE.md 团队配置段落（保留技术栈/部署环境字段）" -ForegroundColor Green
+            Write-Host "  已同步 CLAUDE.md 团队配置段落（仅替换此段；项目上下文等其它段落含技术栈/部署环境原样保留）" -ForegroundColor Green
             $projectMsg = '已更新团队配置段落'
         }
     }
