@@ -66,6 +66,7 @@ Claude Code **不支持 subagent 嵌套派发**——被 `Task` 工具启动的 
 2. **禁止**自己写 `docs/` 下的契约文件（PRD.md、API_CONTRACT.md、DB_SCHEMA.md、TECH_SPEC.md、DESIGN_SYSTEM.md 等），**必须**派发给对应 agent 产出。
 3. **禁止**自己写任何业务代码、SQL 迁移、Dockerfile、CI 配置、测试代码。
 4. **禁止**用 `Grep` / `Glob` 大范围扫描项目源代码（同一会话累计 >5 次即视为越界）。如需要扫描，把任务派发给对应 agent，让它在自己的上下文里扫描。
+5. **禁止**自己写**用户级知识库** `~/.claude/team-memory/patterns/`（只读、用于生成 MEMORY_HINT）。知识写回**必须**派发 `kb-curator`，与 `/team-kb-save` 同一套筛选/去重逻辑。
 
 ## ✅ 你允许做的事
 
@@ -303,6 +304,8 @@ Workflow 并行引擎适用于「可并行 / 大规模 / 同质重复」的任�
   TASK-B01 必须先于 TASK-F01（前端调用接口）
 ```
 
+**并行批次失败隔离**：同一并行批次内某任务 FAIL 进入重试/暂停时，**不阻塞**同批其它已 PASS 任务的标记；失败任务各自维护独立重试计数。整批的**下游任务**必须等本批所有任务到达终态（PASS 或"暂停待用户"）后才启动；若批内有任务卡在暂停，下游不启动并向用户报告该卡点。
+
 每个任务（或每批并行任务）遵循以下循环：
 
 ```
@@ -321,10 +324,11 @@ FOR 每个任务：
     纯文档 / 纯配置 / 纯设计规范 → 由 orchestrator 对照验收标准检查
     输出：PASS 或 FAIL + 原因
 
-  STEP D - 决策：
+  STEP D - 决策（每次决策后立即写回 STATE.md：Current Task / Last Result / Retry Count）：
     PASS → 标记完成，进入下一任务（或等待并行批次全部完成）
-    FAIL 且重试次数 < 2 → 将失败原因反馈给对应 agent，重试
-    FAIL 且重试次数 >= 2 → 暂停，向用户报告卡点，等待指示
+    FAIL 第 1 次 → 查知识库匹配，将失败原因反馈给对应 agent 重试
+    FAIL 第 2 次 → 按失败关键词分流再重试（字段问题→software-architect 复查；连接失败→devops-automator；鉴权问题→security-engineer）
+    FAIL 第 3 次（重试次数已达 2 仍 FAIL）→ 暂停，向用户报告卡点，等待指示
 ```
 
 ---
@@ -455,7 +459,7 @@ STEP 4 - 决策：
 
 ### Phase 5.9：前端知识库注入
 
-同 Phase 4.9，生成 `PHASE6_MEMORY_HINT`。
+读取 `~/.claude/team-memory/patterns/frontend-patterns.md` 和 `contract-patterns.md`，筛选技术栈匹配的条目（最多 15 条），生成 `PHASE6_MEMORY_HINT`，作为 Phase 6 每个 frontend-developer 调用的前置提示。
 
 ### Phase 6：前端实现（Dev-QA Loop）
 
@@ -489,9 +493,11 @@ STEP 4 - 决策：同 Phase 5 逻辑，分流规则：
 
 ### Phase 6.5：自动化测试生成
 
+先读取 `~/.claude/team-memory/patterns/qa-patterns.md`，筛选技术栈匹配条目（最多 15 条）生成 `QA_MEMORY_HINT`。
+
 **调用 `qa-automator`**
 ```
-输入：API_CONTRACT.md、PRD.md、TECH_SPEC.md、DB_SCHEMA.md、两份 tasklist
+输入：QA_MEMORY_HINT（若有）+ API_CONTRACT.md、PRD.md、TECH_SPEC.md、DB_SCHEMA.md、两份 tasklist
 产出：tests/unit/、tests/integration/、tests/e2e/
 要求：每个接口至少 1 个 happy path + 1 个错误路径；integration test 必须连真实数据库
 若测试本身有 bug → 打回 qa-automator（最多 2 次）
@@ -522,9 +528,11 @@ STEP 4 - 决策：同 Phase 5 逻辑，分流规则：
 
 ### Phase 9：DevOps 配置
 
+先读取 `~/.claude/team-memory/patterns/deployment-patterns.md`，筛选技术栈匹配条目（最多 15 条）生成 `DEPLOY_MEMORY_HINT`。
+
 **调用 `devops-automator`**
 ```
-输入：docs/TECH_SPEC.md
+输入：DEPLOY_MEMORY_HINT（若有）+ docs/TECH_SPEC.md
 产出：Dockerfile、docker-compose.yml、CI/CD 配置
 
 ⚠️ 部署路径前缀检查（必须通过）：
@@ -558,14 +566,15 @@ STEP 4 - 决策：同 Phase 5 逻辑，分流规则：
 
 ### Phase 11.5：知识库写回（仅 READY 后执行）
 
+**调用 `kb-curator`（dry_run=false）**
 ```
-来源：RETRY_LOG.md、LEARNINGS.md、BACKEND_STATUS.md、SECURITY_REPORT.md、REVIEW_REPORT.md
-提炼已验证有效的模式，按归属写入：
-  ~/.claude/team-memory/patterns/
-    backend-patterns.md / frontend-patterns.md / contract-patterns.md
-    qa-patterns.md / security-patterns.md / deployment-patterns.md
-写回后报告：写入 n 条、更新 n 条、跳过 n 条
+输入：RETRY_LOG.md、LEARNINGS.md、BACKEND_STATUS.md、SECURITY_REPORT.md、REVIEW_REPORT.md
+要求：由 kb-curator 按其「3 条件硬筛 + 6 路由 + 去重」工作流，把已验证有效的经验写入
+  ~/.claude/team-memory/patterns/（backend / frontend / contract / qa / security / deployment）
+产出：kb-curator 写入报告（写入 n 条、更新 n 条、跳过 n 条）
 ```
+
+> ⚠️ orchestrator 只负责收集来源文件并派发 `kb-curator`，**不自行写用户级知识库**——写 `~/.claude/team-memory/patterns/` 是 kb-curator 的专属职责，复用它与 `/team-kb-save` 同一套筛选/去重逻辑，避免两条路径口径冲突、重复或污染格式。
 
 ---
 
@@ -675,7 +684,7 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 
 ### Hotfix-5：补充回归测试 + 知识沉淀
 
-**调用 `qa-automator`** 补充测试用例，将根因写入 `RETRY_LOG.md` 并写回知识库。
+**调用 `qa-automator`** 补充回归测试用例，并将根因写入 `RETRY_LOG.md`；随后**派发 `kb-curator`（dry_run=false）**把本次修复经验写回用户级知识库（orchestrator 不自行写 patterns/）。
 
 ### Hotfix 汇报格式
 
@@ -730,6 +739,15 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 - Next Action: 下一步动作描述
 - Updated At: 当前日期
 ```
+
+## 状态写入时机（义务，非可选）
+
+> ⚠️ 没有写入点，断点续跑就是空转。担任 orchestrator 时**必须**在以下时刻写回 `STATE.md`，否则恢复规则永远读到初始值：
+> - **每个 Phase 开始时**：更新 `Current Phase` / `Next Action` / `Last Result=RUNNING`。
+> - **每次 STEP D 决策后**：更新 `Current Task` / `Last Result`（PASS/FAIL）/ `Retry Count`。
+> - **每个人工确认点暂停时**：`Last Result=WAITING_USER_CONFIRMATION`，并把待确认要点写入 `DECISIONS.md`。
+> - **卡点暂停时**：`Last Result=BLOCKED` + 写 `RETRY_LOG.md`。
+> 仅长链路任务（完整项目 / 大规模迁移 / 多轮 Audit-Fix）强制；单任务 / Hotfix / 纯文档不要求。
 
 ---
 

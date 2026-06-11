@@ -6,6 +6,23 @@
 
 ---
 
+## [1.3.1] - 2026-06-11
+
+> 多 agent 编排逻辑审计后的第一批修复：补齐状态机写入闭环、统一重试升级、修好知识库读写闭环。
+
+### 修复（Fixed）
+
+- **[HIGH] 状态机写入闭环缺失**：`orchestrator.md` 此前只有 STATE.md 的「读规则 + 格式」，没有任何执行点真正写它，断点续跑恒读到初始值。新增「状态写入时机（义务）」——每个 Phase 开始 / 每次 STEP D 决策后 / 确认点暂停 / 卡点暂停 都必须写回 STATE.md；STEP D 决策步也补上"立即写回 STATE.md"。
+- **[HIGH] 知识写回绕过 kb-curator 且 orchestrator 越权**：Phase 11.5 与 Hotfix-5 原为 orchestrator **自己**写用户级 `~/.claude/team-memory/patterns/`，与 `/team-kb-save` 两条路径口径冲突、且超出 orchestrator 权限。改为**派发 `kb-curator`（dry_run=false）**统一写回；红线「禁止做的事」新增第 5 条：orchestrator 禁止自写用户级知识库。
+- **[HIGH] 前端知识库注入读错文件**：Phase 5.9 原写"同 Phase 4.9"，导致前端阶段注入的是 `backend-patterns.md`、`frontend-patterns.md` 从无人读。改为显式读取 `frontend-patterns.md` + `contract-patterns.md`。
+- **[MEDIUM] 并行批次失败无隔离协议**：Step 3 补「并行批次失败隔离」——失败任务各自独立重试、不阻塞同批 PASS 任务；下游须等整批到达终态再启动。
+- **[MEDIUM] Dev-QA Loop 升级路径不一致**：通用 Step 3 / STEP D 补上与 Phase 5 一致的「第 2 次失败按关键词分流（字段→architect / 连接→devops / 鉴权→security）」升级步（重试上限仍为 3 次/任务，二者本就一致）。
+- **[MEDIUM] qa / deployment 经验只进不出**：Phase 6.5、Phase 9 分别补上读取 `qa-patterns.md`、`deployment-patterns.md` 生成 HINT 注入 qa-automator / devops-automator，与 Phase 4.9/5.9 对称，闭合注入侧。
+
+> 本批仅改 `agents/orchestrator.md`（编排手册），不动任何 agent 契约。其余审计发现的契约常量漂移（health 路径 / 错误格式 / start.sh / VITE_BASE / variables.css）等留待后续批次。
+
+---
+
 ## [1.3.0] - 2026-06-11
 
 > 新建项目时可按需求推荐技术栈，并打通 init 声明 → 架构师选型 → 用户确认的链路。
