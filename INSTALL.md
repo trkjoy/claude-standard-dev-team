@@ -21,7 +21,16 @@ cd claude-dev-ai-team
 bash scripts/install.sh
 ```
 
-**Windows（PowerShell）：**
+**Windows（推荐用 `.cmd` 启动器，免设执行策略）：**
+
+```bat
+cd claude-dev-ai-team
+.\scripts\install.cmd
+```
+
+> `.cmd` 启动器不受 PowerShell ExecutionPolicy 限制，内部以 `-ExecutionPolicy Bypass` 仅对本次进程调用 `install.ps1`，不改系统全局设置——新电脑首次安装无需先手动放行脚本。
+
+**或直接跑 `.ps1`**（若系统报"禁止运行脚本"，见文末 FAQ）：
 
 ```powershell
 cd claude-dev-ai-team
@@ -106,12 +115,17 @@ Get-Content $HOME\.claude\team-version   # Windows
 bash /path/to/解压目录/scripts/update.sh
 ```
 
+```bat
+:: Windows（推荐用 .cmd 启动器，免设执行策略；在项目目录下）
+C:\path\to\解压目录\scripts\update.cmd
+```
+
 ```powershell
-# Windows（在项目目录下）
+# Windows（或直接跑 .ps1，在项目目录下）
 pwsh C:\path\to\解压目录\scripts\update.ps1
 ```
 
-> 也可显式指定项目目录：`bash .../scripts/update.sh /path/to/your-project`。
+> 也可显式指定项目目录：`bash .../scripts/update.sh /path/to/your-project`，或 `...\scripts\update.cmd D:\path\to\your-project`。
 
 它会一次性完成两件事：
 1. **刷新全局**：更新 `~/.claude/` 下的 15 个 agent、命令、知识库（已存在不覆盖）、workflow 模板
@@ -191,9 +205,24 @@ Remove-Item "$HOME\.claude\commands\team-init.md","$HOME\.claude\commands\team-k
 
 A: 先确认 `install` 脚本已成功运行、`~/.claude/commands/team-init.md` 与 `team-kb-save.md` 已生成，再重启 Claude Code 让它重新加载命令列表。注意：`/team-install`、`/team-update` 自 v1.2.0 起已移除，安装与升级请在本地运行 `scripts/install.*` / `scripts/update.*`。
 
-### Q: PowerShell 报"脚本被禁止运行"
+### Q: PowerShell 报"脚本被禁止运行"（无法加载……禁止运行脚本）
 
-A: 管理员 PowerShell 执行：`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+A: 这是 Windows 默认执行策略（Restricted）在脚本加载前就拦下了 `.ps1`，与脚本本身无关。三选一：
+
+1. **最省事——改用 `.cmd` 启动器**（不受执行策略管辖，无需任何放行）：
+   ```bat
+   .\scripts\install.cmd
+   .\scripts\update.cmd
+   ```
+2. 只对当前窗口临时放行，再跑 `.ps1`：
+   ```powershell
+   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+   .\scripts\install.ps1
+   ```
+3. 给当前用户长期放行（设一次永久生效，无需管理员）：
+   ```powershell
+   Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+   ```
 
 ### Q: 我已经有自己的 agent，会被覆盖吗？
 

@@ -6,6 +6,20 @@
 
 ---
 
+## [1.4.0] - 2026-06-11
+
+> 新增 Windows `.cmd` 启动器，新电脑首次安装/升级无需先手动放行 PowerShell 执行策略。
+
+### 新增（Added）
+
+- **`scripts/install.cmd` / `scripts/update.cmd` 启动器**：解决新电脑首次运行 `.\scripts\install.ps1` 报 "无法加载文件……禁止运行脚本"（PowerShell 默认 ExecutionPolicy=Restricted 在脚本**加载前**就拦截，脚本内部任何 `Set-ExecutionPolicy` 都来不及执行、无法自救）。`.cmd` / `.bat` 不受 PowerShell 执行策略管辖，启动器内部以 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File <同级 .ps1>` 调用，`%*` 透传全部参数（`update.cmd` 可带项目目录）。`Bypass` 仅作用于该次进程，**不修改系统全局策略**。
+  - 用法：`.\scripts\install.cmd`、`.\scripts\update.cmd [项目目录]`。
+  - `.ps1` 本体逻辑零改动，直接复用；仍可按原方式手动设执行策略后跑 `.ps1`。
+  - 仅 Windows 需要——Mac/Linux/WSL 无执行策略限制，继续用 `bash scripts/*.sh`，不新增 `.sh` 启动器。
+- **INSTALL.md**：Windows 安装/升级首推 `.cmd` 启动器；FAQ「脚本被禁止运行」给出三档处理（`.cmd` 启动器 / Process 级临时放行 / CurrentUser 级长期放行）。
+
+---
+
 ## [1.3.9] - 2026-06-11
 
 > 砍掉设计就别扭的 `DYNAMIC_CONTENT_MAP.md`，把它唯一有用的内核收敛为前端的一条反内容硬编码规则（YAGNI / 化繁为简）。
