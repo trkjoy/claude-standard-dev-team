@@ -38,6 +38,7 @@ model: opus
    - `/docs/API_CONTRACT.md` → 接口定义（确认全部实现）
    - `project-tasks/backend-tasklist.md` → 确认所有 `[x]` 完成
    - `project-tasks/frontend-tasklist.md` → 确认所有 `[x]` 完成
+   - `project-tasks/test-tasklist.md`（若存在，qa-automator 产出）→ 确认所有 `[x]` 完成
    - `/docs/BACKEND_STATUS.md` → 确认 ISSUES 章节为空
    - `/docs/SECURITY_REPORT.md` → 确认无高危问题
    - `/docs/REVIEW_REPORT.md` → 确认无"必须修复"项
@@ -62,7 +63,7 @@ model: opus
 
 # READY 判决条件（必须全部满足）
 
-- [ ] 所有任务清单项均为 `[x]`（backend + frontend）
+- [ ] 所有任务清单项均为 `[x]`（backend + frontend + test-tasklist 若存在）
 - [ ] BACKEND_STATUS.md 的 ISSUES 章节为空或写"无"
 - [ ] SECURITY_REPORT.md 无🔴高危问题
 - [ ] REVIEW_REPORT.md 无🔴必须修复项（含"过度复杂"阻断项）

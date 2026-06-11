@@ -125,10 +125,13 @@ get_code_connect_map(node_id: "123-456")
 
 **必须先读取（如果在 orchestrator 流程中）：**
 ```
-1. docs/API_CONTRACT.md   → 接口定义
-2. docs/TECH_SPEC.md      → 技术栈（含部署路径规范章节）
-3. 上面建立的设计数据清单  → 所有 UI 数值
+1. docs/API_CONTRACT.md      → 接口定义
+2. docs/TECH_SPEC.md         → 技术栈（含部署路径规范章节）
+3. docs/DESIGN_SYSTEM.md     → 设计规范（颜色/间距/字体/组件，ui-designer 产出）
+   + src/styles/variables.css 或 tailwind.config.ts/globals.css（依技术栈）→ 所有 UI 数值
 ```
+
+> **数值来源优先级**：orchestrator 流程内**以 `DESIGN_SYSTEM.md` 为准**（此场景通常无 Figma）；仅当用户直接给了 Figma 链接时，才走 Step 1A 从 Figma 取真实数值。两者不可凭感觉估算。
 
 **⚠️ 读取 TECH_SPEC.md 后，立即检查"部署路径规范"章节，确认 VITE_API_BASE 的约定值，后续所有 API 调用必须遵守。**
 

@@ -237,6 +237,11 @@ Workflow 并行引擎适用于「可并行 / 大规模 / 同质重复」的任�
 
 **底线：用户不点头则完全走原有 markdown 流程，零行为变化。**
 
+**用户点头 y 之后到底跑什么（区分两条并行路径，别混用）**：
+- **Workflow 引擎**（大规模 / 跨上下文 / 需对抗式验证，命中 Step 1.6 阈值且用户确认）→ 加载 `~/.claude/team-workflows/` 下对应脚本（如 `team-dev-loop.workflow.js`、`audit-scan.workflow.js`）执行；脚本 return 的结构化结果回流给 orchestrator。**回流约定**：workflow 内已自带重试（dev-loop 默认 2 次），其 FAIL 项**不再叠加** orchestrator 的 3 次重试，直接转人工卡点；orchestrator 把结果写入 `STATE.md` / 对应报告后继续后续 Phase。
+- **`/dispatching-parallel-agents` skill**（同批次少量互不依赖任务的轻量并行）→ 仅用于**未启用 Workflow** 时 Step 3 的就地并行派发，不加载 `.workflow.js`。
+- 二者**互斥**：同一批任务要么走 Workflow 引擎、要么走 skill，不重复派发。
+
 ---
 
 ## ► Step 1.5：头脑风暴与设计对齐
@@ -761,7 +766,7 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 |---|---|
 | 长链路任务启动时 | 把用户原始需求一句话固化为锚定目标，写入 `.claude/team-state/GOAL.md`（见模板）+ 可选 token 预算 |
 | 每个 Phase 边界 | 进入下一 Phase 前对照 `GOAL.md` 自检"当前产出是否仍服务于原始目标"，偏离则暂停报告 |
-| Workflow 下沉时 | 把锚定目标 + 完成条件作为 workflow 脚本的硬性终止条件，避免误判"已完成" |
+| Workflow 下沉时 | 当前 workflow 脚本**不读 GOAL**（终止条件是脚本内的 MAX_ATTEMPTS / 阈值）。因此 workflow 回流后，由 **orchestrator 对照 GOAL 的完成条件复核**结果，未达标则不判"已完成"、转人工或追加任务 |
 | 重试 / 卡点时 | `RETRY_LOG.md` 卡点报告附带"距离锚定目标还差什么" |
 
 ## GOAL.md 格式

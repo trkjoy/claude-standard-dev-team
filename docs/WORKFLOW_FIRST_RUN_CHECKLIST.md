@@ -102,10 +102,9 @@
     - 是否 prompt 模板过长？
     - 是否误派发了太多并行任务？
 
-- [ ] **Workflow 可恢复性验证**
-  - 模拟"Workflow 执行中途网络中断"，检查是否能续跑（而非从头开始）
-  - 确认 orchestrator 保存了中间状态（如 task IDs 与部分结果）
-  - 续跑后是否能正确跳过已完成任务、继续处理未完成任务
+- [ ] **Workflow 中断行为符合预期（当前版本不支持脚本级续跑）**
+  - 当前 `.workflow.js` 是一次性 `await pipeline(...)`，**无 checkpoint / 续跑能力**。中断后从头重跑是可接受行为。
+  - 确认中断不会污染已写入的产物/状态；orchestrator 的串行恢复仍以 `STATE.md` 为准（见 orchestrator「状态写入时机」）。
 
 - [ ] **日志与诊断信息清晰**
   - Workflow 的每个 phase / task 是否都有明确的 log 输出？
@@ -125,9 +124,9 @@
     ```
   - 确认"完成条件"是可自动或手工验证的（而非模糊的"做完"）
 
-- [ ] **Workflow 脚本绑定了目标完成条件**
-  - 检查 `team-dev-loop` / `audit-scan` 中是否读取并应用了 GOAL？
-  - GOAL 的完成条件是否真的作为硬性终止条件（不能无限重试）？
+- [ ] **GOAL 完成条件由 orchestrator 在 workflow 回流后复核**
+  - 当前 `team-dev-loop` / `audit-scan` 脚本**不读 GOAL**，终止条件是脚本内 MAX_ATTEMPTS / 阈值。
+  - 检查 workflow 返回结果后，orchestrator 是否对照 GOAL「完成条件」复核、未达标不判"已完成"。
 
 - [ ] **长链路任务的 RETRY_LOG 附带目标距离**
   - 若任务卡住需重试，log 中是否明确指出"距离 GOAL 还缺什么"？

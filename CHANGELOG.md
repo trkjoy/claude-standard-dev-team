@@ -6,6 +6,23 @@
 
 ---
 
+## [1.3.3] - 2026-06-11
+
+> 第三批修复：消费断层、文档一致性、Workflow 集成边界。把"文档说有、实际没有"的断点对齐到真实行为。
+
+### 修复（Fixed）
+
+- **[HIGH] frontend-developer 不读 DESIGN_SYSTEM.md**：orchestrator Phase 6 传入 ui-designer 产出的 `DESIGN_SYSTEM.md`，但 frontend-developer 必读清单只列 API_CONTRACT/TECH_SPEC，导致设计规范无消费入口。已补入 `DESIGN_SYSTEM.md` + `variables.css`/`tailwind.config`，并明确"orchestrator 流程内以 DESIGN_SYSTEM 为准，仅用户给 Figma 时才走 Figma"。
+- **[MEDIUM] reality-checker 漏校验 test-tasklist**：qa-automator（Phase 6.5）产出的 `test-tasklist.md` 未进 reality-checker 的读取清单与 READY 条件，已补入。
+- **[MEDIUM] WORKFLOW.md 调度全图漏画新成员**：补上 Phase 6.5（qa-automator）与 Phase 11.5（kb-curator），并加注 `.5` 子阶段与 4.9/5.9 内部注入步说明；团队成员数 12 → 14。
+- **[MEDIUM] WORKFLOW.md「只 2 处暂停」与安全确认点冲突**：补充"不可逆/对外动作（Phase 9 部署、git push、删库等）执行前必须单独安全确认"，与 orchestrator 红线一致。
+- **[MEDIUM] Workflow 启用后跑什么没定义**：orchestrator Step 1.6 补明确——用户点头 y → 加载 `~/.claude/team-workflows/` 脚本执行（自带重试，FAIL 不叠加 orchestrator 重试、直接转人工）；`/dispatching-parallel-agents` skill 仅用于未启用 Workflow 时的就地并行；二者互斥。
+- **[MEDIUM] GOAL 终止条件虚假承诺**：orchestrator 与 first-run checklist 原称"workflow 脚本把 GOAL 当硬性终止条件"，但脚本里根本不读 GOAL。改为"脚本不读 GOAL；由 orchestrator 在回流后对照 GOAL 完成条件复核"，并同步修正 checklist 的可恢复性项（当前脚本无续跑能力，中断从头重跑可接受）。
+
+> 本批改动：`frontend-developer.md`、`reality-checker.md`、`orchestrator.md`、`WORKFLOW.md`、`docs/WORKFLOW_FIRST_RUN_CHECKLIST.md`。仍有少量低优先项（功能新增类型无专属模板、audit-scan 投票独立性、GOAL.md 未在 init 预建）留待后续。
+
+---
+
 ## [1.3.2] - 2026-06-11
 
 > 第二批修复：消除跨 agent 的契约常量漂移（这些漂移会让生成的项目运行期 404 / 容器启动失败）。把散落常量上收到 TECH_SPEC 全局规范，作为单一真值。

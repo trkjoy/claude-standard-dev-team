@@ -42,6 +42,9 @@ Phase 6   ┌─→ Task → frontend-developer  │  ┐  Dev-QA Loop
           │   ↓                            │  │
           │   PASS / FAIL                 │  ┘
           ▼
+Phase 6.5 ┌─→ Task → qa-automator        →  tests/unit、integration、e2e
+          │                                  （测试暴露 bug → 进 Dev-QA Loop 修复）
+          ▼
 Phase 7   ┌─→ Task → security-engineer   →  SECURITY_REPORT.md
           ▼
 Phase 8   ┌─→ Task → code-reviewer       →  REVIEW_REPORT.md
@@ -55,8 +58,13 @@ Phase 10  ┌─→ Task → reality-checker      →  READY 或 NEEDS WORK
           ▼
 Phase 11  ┌─→ Task → technical-writer     →  README.md + API_DOC.md
           ▼
+Phase 11.5┌─→ Task → kb-curator           →  把已验证经验写回用户级知识库
+          │   （仅 reality-checker 判 READY 后执行；dry_run=false）
+          ▼
         完工 ✅
 ```
+
+> 整数 Phase 是主链路；带 `.5` 的（2.5 / 6.5 / 11.5）是穿插子阶段。另有 Phase 4.9 / 5.9 是 orchestrator 读知识库生成 MEMORY_HINT 的内部注入步，不单独派发 agent，未画入上图。
 
 ---
 
@@ -149,12 +157,14 @@ Phase 2 完成后  ⏸  展示 API 接口列表 + 数据库表结构摘要
                   （目的：契约一旦确认，所有 agent 都依赖它；
                   确认后任何接口字段名变更都是大事故）
 
-之外全部自动跑，不打扰用户。
+之外的实现/测试/审查阶段全部自动跑，不打扰用户。
 ```
+
+> ⚠️ **例外：不可逆 / 对外动作的安全确认点**。Phase 9 真实部署 / 热部署、`git push`、删库删表、装系统依赖等**不可逆或对外**动作，在执行前 orchestrator **必须**单独停一次、展示将执行的命令并等用户点头——即便项目 `settings.json` 已自动放行工具（质量门 ≠ 安全门）。所以严格说是「2 处范围确认 + 不可逆动作安全确认」。
 
 **为什么不在 Phase 5/6/7/8 等地方暂停？**
 
-因为这些阶段有自动 Dev-QA Loop 和打回机制，能自愈。让用户每个任务都确认会很烦。**只在"会引发雪崩式重跑"的关键节点才打断用户**。
+因为这些阶段有自动 Dev-QA Loop 和打回机制，能自愈。让用户每个任务都确认会很烦。**只在"会引发雪崩式重跑"的关键节点、以及不可逆动作前才打断用户**。
 
 ---
 
@@ -248,7 +258,7 @@ T=13:30   orchestrator 给主对话发最终汇报
 T=13:30   主对话给用户看汇报
 ```
 
-整个过程**主对话只看到几次 orchestrator 的进度汇报**，真正干活的 12 个团队成员各自在独立 session 里跑（总指挥 orchestrator 不写代码只调度）。**主对话的 token 消耗极低**——几千 token 就跑完了一个完整项目。
+整个过程**主对话只看到几次 orchestrator 的进度汇报**，真正干活的 14 名团队成员各自在独立 session 里跑（总指挥 orchestrator 不写代码只调度）。**主对话的 token 消耗极低**——几千 token 就跑完了一个完整项目。
 
 ---
 
