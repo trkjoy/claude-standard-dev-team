@@ -406,7 +406,7 @@ project-tasks/
 **调用 `ui-designer`**
 ```
 输入：docs/PRD.md、docs/TECH_SPEC.md
-产出：docs/DESIGN_SYSTEM.md、src/styles/variables.css
+产出：docs/DESIGN_SYSTEM.md +（依技术栈二选一）shadcn/Tailwind → tailwind.config.ts + globals.css；CSS Modules → src/styles/variables.css
 ```
 
 ### Phase 3：任务拆解

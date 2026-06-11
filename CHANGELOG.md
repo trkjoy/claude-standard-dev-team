@@ -6,6 +6,27 @@
 
 ---
 
+## [1.3.2] - 2026-06-11
+
+> 第二批修复：消除跨 agent 的契约常量漂移（这些漂移会让生成的项目运行期 404 / 容器启动失败）。把散落常量上收到 TECH_SPEC 全局规范，作为单一真值。
+
+### 修复（Fixed）
+
+- **[HIGH] 健康检查路径三处不一致**：backend-architect 规则要 `/api/health` 却给了 `/health` 的 Koa 示例；reality-checker 验收脚本 curl 的是 `/health` 和 `/api/v1/health`。全部统一为 `/api/health`。
+- **[HIGH] 错误响应格式冲突**：backend-architect 小程序鉴权中间件返回 `{ code: 4010/4011 }`（数字 code），与契约 `{ error, message }`（字符串码）冲突，qa-automator 又断言 `error` 字段。改为 `{ error: 'unauthorized', message }`，状态码保持 401。
+- **[HIGH] `start.sh` 落点不一致**：database-optimizer 写 `scripts/start.sh`、devops 一处 `CMD ["sh","scripts/start.sh"]` 一处 `CMD ["sh","start.sh"]`，容器会找不到脚本。统一为**项目根 `start.sh`**（迁移脚本仍可在 `scripts/` 下）。
+- **[HIGH] 前端 base 环境变量名不一致**：架构/前端用 `VITE_BASE_URL`，devops 注入 `VITE_BASE_PATH`，子路径部署静态资源 404。devops 全部改为 `VITE_BASE_URL`。
+- **[MEDIUM] Phase 2.5 产出与技术栈不符**：orchestrator 把 `variables.css` 当 ui-designer 无条件产出，但默认 shadcn/Tailwind 栈产的是 `tailwind.config.ts + globals.css`。改为依技术栈二选一。
+- **[LOW] qa-automator 示例断言违反成功响应包裹层**：示例断言 `res.body.token`（顶层），与统一成功格式 `{ data, message }` 不符。改为 `res.body.data.token`。
+
+### 改进（Changed）
+
+- **TECH_SPEC 全局规范表新增「单一真值」行**：健康检查端点、统一成功/错误格式、前端 base 环境变量名、容器启动脚本落点，全部固化进 `software-architect.md` 的全局规范表，并声明所有 agent 涉及这些常量必须引用本表、不得各自取值——从源头防止再次漂移。
+
+> 本批改动文件：`software-architect.md`、`backend-architect.md`、`reality-checker.md`、`devops-automator.md`、`database-optimizer.md`、`qa-automator.md`、`orchestrator.md`。未改任何接口语义，只统一常量取值。
+
+---
+
 ## [1.3.1] - 2026-06-11
 
 > 多 agent 编排逻辑审计后的第一批修复：补齐状态机写入闭环、统一重试升级、修好知识库读写闭环。

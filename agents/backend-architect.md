@@ -122,7 +122,7 @@ export const findById = async (id: number) => {
 
 ```javascript
 // Koa 示例
-router.get('/health', (ctx) => { ctx.body = { status: 'ok' } })
+router.get('/api/health', (ctx) => { ctx.body = { status: 'ok' } })
 
 // Express 示例
 app.get('/api/health', (req, res) => { res.json({ status: 'ok' }) })
@@ -245,7 +245,7 @@ export default function authMiddleware() {
     const code = ctx.get('X-WX-Code');
     if (!code) {
       ctx.status = 401;
-      ctx.body = { code: 4010, message: '请先登录小程序' };
+      ctx.body = { error: 'unauthorized', message: '请先登录小程序' }; // 统一错误格式：error 为字符串码
       return;
     }
 
@@ -255,7 +255,7 @@ export default function authMiddleware() {
       await next();
     } catch (err) {
       ctx.status = 401;
-      ctx.body = { code: 4011, message: '登录态校验失败' };
+      ctx.body = { error: 'unauthorized', message: '登录态校验失败' };
     }
   };
 }

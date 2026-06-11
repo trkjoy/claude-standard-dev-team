@@ -104,7 +104,13 @@ frontend/
 | 时间格式 | ISO 8601（`2024-01-15T08:30:00Z`） |
 | 金额格式 | 整数分（如 12900 表示 ¥129.00） |
 | 分页参数 | `page`（从1开始）、`pageSize`（默认20） |
-| 统一错误格式 | `{ "error": "error_code", "message": "人类可读描述" }` |
+| 统一成功格式 | `{ "data": {...}, "message": "success" }`（业务数据一律包在 `data` 下） |
+| 统一错误格式 | `{ "error": "error_code", "message": "人类可读描述" }`（`error` 为字符串错误码，**禁止**用数字 `code`） |
+| 健康检查端点 | `GET /api/health`（与其他接口同前缀，免鉴权恒返回 200） |
+| 前端 base 环境变量 | 资源 base 用 `VITE_BASE_URL`、API 前缀用 `VITE_API_BASE`（命名固定，禁止 `VITE_BASE_PATH` 等别名） |
+| 容器启动脚本 | 项目根 `start.sh`（先迁移后启动；与 Dockerfile `CMD ["sh","start.sh"]` 落点一致） |
+
+> 以上为全项目**单一真值**。所有 agent（backend / frontend / devops / qa / reality-checker）涉及这些常量时必须引用本表，不得各自取值。
 
 ## 环境变量
 

@@ -47,11 +47,11 @@ model: opus
    # 确认服务可以启动
    docker-compose up -d 2>&1 | tail -5
    
-   # 确认健康检查通过
-   curl -s http://localhost:3000/health
+   # 确认健康检查通过（统一端点 /api/health，见 TECH_SPEC 全局规范）
+   curl -s http://localhost:3000/api/health
    
-   # 确认核心接口可访问（举例）
-   curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/v1/health
+   # 确认健康检查返回 200
+   curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health
    ```
 
 3. **逐条对照 PRD 验收标准**

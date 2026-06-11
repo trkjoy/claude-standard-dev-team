@@ -274,7 +274,7 @@ groups:
 - 配置监控、日志、告警体系
 - 创建灾备与备份自动化
 - **Dockerfile CMD 必须接入迁移启动脚本**：
-  - Node.js 项目：`CMD ["sh", "scripts/start.sh"]`（start.sh 由 database-optimizer 在 Phase 4 创建）
+  - Node.js 项目：`CMD ["sh", "start.sh"]`（项目根 start.sh，由 database-optimizer 在 Phase 4 创建）
   - Python/FastAPI：`CMD ["sh", "-c", "python init_db.py && alembic upgrade head && uvicorn ..."]`
   - 禁止直接 `CMD ["node", "server.js"]` 或 `CMD ["uvicorn", "..."]` 跳过迁移步骤
 
@@ -359,9 +359,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-ARG VITE_BASE_PATH=/
+ARG VITE_BASE_URL=/
 ARG VITE_API_BASE=
-ENV VITE_BASE_PATH=$VITE_BASE_PATH
+ENV VITE_BASE_URL=$VITE_BASE_URL
 ENV VITE_API_BASE=$VITE_API_BASE
 RUN npm run build
 
@@ -377,7 +377,7 @@ frontend:
   build:
     context: ./frontend
     args:
-      VITE_BASE_PATH: /{APP_PATH}/
+      VITE_BASE_URL: /{APP_PATH}/
       VITE_API_BASE: /{APP_PATH}
 ```
 

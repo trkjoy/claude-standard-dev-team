@@ -127,11 +127,11 @@ describe('POST /api/v1/auth/login', () => {
       .send({ email: 'test@example.com', password: 'password123' });
 
     expect(res.status).toBe(200);
-    // 严格按 API_CONTRACT 验证字段名
-    expect(res.body).toHaveProperty('token');
-    expect(res.body).toHaveProperty('user');
-    expect(res.body.user).toHaveProperty('id');
-    expect(res.body.user).toHaveProperty('email');
+    // 严格按 API_CONTRACT 验证字段名：成功响应统一包在 data 下（{ data, message }）
+    expect(res.body.data).toHaveProperty('token');
+    expect(res.body.data).toHaveProperty('user');
+    expect(res.body.data.user).toHaveProperty('id');
+    expect(res.body.data.user).toHaveProperty('email');
   });
 
   it('missing password returns 400', async () => {

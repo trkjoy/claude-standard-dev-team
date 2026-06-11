@@ -191,7 +191,7 @@ async function runMigrations() {
 runMigrations().catch(err => { console.error('[migrate] ❌', err.message); process.exit(1); });
 ```
 
-**`scripts/start.sh`**（或 `start.sh`）：
+**`start.sh`**（放**项目根**，与 devops 的 Dockerfile `CMD ["sh","start.sh"]` 落点一致；迁移脚本可在 `scripts/` 下）：
 ```sh
 #!/bin/sh
 set -e
