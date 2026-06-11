@@ -384,7 +384,7 @@ mkdir -p docs project-tasks .claude/team-state
 ```
 docs/
   PRD.md、TECH_SPEC.md、API_CONTRACT.md、DB_SCHEMA.md
-  DESIGN_SYSTEM.md、DYNAMIC_CONTENT_MAP.md
+  DESIGN_SYSTEM.md
   BACKEND_STATUS.md、SECURITY_REPORT.md、REVIEW_REPORT.md
 project-tasks/
   backend-tasklist.md、frontend-tasklist.md、test-tasklist.md

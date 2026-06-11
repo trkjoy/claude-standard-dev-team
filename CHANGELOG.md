@@ -6,6 +6,22 @@
 
 ---
 
+## [1.3.9] - 2026-06-11
+
+> 砍掉设计就别扭的 `DYNAMIC_CONTENT_MAP.md`，把它唯一有用的内核收敛为前端的一条反内容硬编码规则（YAGNI / 化繁为简）。
+
+### 移除（Removed）
+
+- **删除 `DYNAMIC_CONTENT_MAP.md` 产线**：该文件本意是告诉前端"哪些内容必须绑接口、哪些可写死"，但存在双重设计缺陷——(1) 它的主键列是「设计稿占位文字」，而产出它的 `software-architect` 在 Phase 2 **根本看不到设计稿**（Figma 是 frontend-developer 的输入、DESIGN_SYSTEM 是视觉 token 且更晚），最有价值的"稿子文字→字段"映射列填不了；(2) 它唯一能可靠产出的"绑定字段/来源接口"两列，与同时在写的 `API_CONTRACT.md` 完全冗余。叠加它**从未被任何下游 agent 读取**（前端必读清单、orchestrator Phase 6 投递、reality-checker 终验都没有它），属于"产出即孤儿"。已删除 `software-architect.md` 的「输出文件四」整段与执行步骤第 6 步、`orchestrator.md` Phase 0 占位清单中的该文件。
+
+### 新增（Added）
+
+- **frontend-developer 新增「内容数据规范（防内容硬编码，零容忍）」**：把被删文件唯一不冗余的内核——动态/静态判断口诀 + 四类必绑内容（文字/图片/列表/条件显示）+ 静态内容白名单——收敛为前端的一条自检规则，字段来源指向 `API_CONTRACT.md`，并规定"拿不准默认按动态绑接口"。此前团队的"零容忍硬编码"只挡得住 API 路径（Phase 6/9 有强制检查），**内容硬编码无人防**；现由前端在真正持有设计稿的环节自检堵上，且不再依赖一份没人读的冗余文档。
+
+> 本批改动：`agents/software-architect.md`、`agents/orchestrator.md`、`agents/frontend-developer.md`。历史 `docs/superpowers/` 下的 plan/spec 仍提及该文件，属历史设计记录，按"手术式改动不碰无关"保留不动。
+
+---
+
 ## [1.3.8] - 2026-06-11
 
 > 第四轮编排逻辑审计：补 audit-scan 扫描侧的 null 崩溃（1.3.5 只加固了验证侧），并接通两处被吞掉的信号。

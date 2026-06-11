@@ -38,7 +38,6 @@ model: opus
 3. 选定技术栈，生成 `TECH_SPEC.md`
 4. 设计所有接口，生成 `API_CONTRACT.md`
 5. 设计数据库结构，生成 `DB_SCHEMA.md`
-6. 梳理动态内容，生成 `DYNAMIC_CONTENT_MAP.md`
 
 **被打回执行**：
 1. 读取问题文件（`DB_ISSUES.md` 或 `BACKEND_STATUS.md` 的 ISSUES 章节）
@@ -302,67 +301,6 @@ users 1 ──── N orders         （一个用户有多个订单）
 orders 1 ──── N order_items   （一个订单有多个商品行）
 order_items N ──── 1 products （多个订单行对应同一商品）
 ```
-```
-
----
-
-# 输出文件四：/docs/DYNAMIC_CONTENT_MAP.md
-
-```markdown
-# 动态内容映射表
-> 版本: 1.0 | 由 software-architect 生成
-> ⚠️ frontend-developer 还原设计稿前必须读取此文件
-
-## 使用规则
-
-- ✅ **列在此表中的内容** → 必须绑定接口数据，严禁硬编码
-- ❌ **未列在此表中的内容** → 才可以作为静态文字（如按钮文案、页面标题）
-- 📋 **判断方法**："不同用户/不同时间看到的内容一样吗？不一样就是动态的"
-
----
-
-## 文字类动态内容
-
-| 设计稿占位文字 | 绑定字段 | 来源接口 | 格式化要求 |
-|--------------|---------|---------|----------|
-| [示例："张三"] | `user.name` | GET /api/v1/users/me | 无 |
-| [示例："¥1,299"] | `product.price` | GET /api/v1/products/:id | 分转元，千分位 |
-| [示例："2024-01-15"] | `order.createdAt` | GET /api/v1/orders/:id | 格式化为本地时间 |
-| [示例："128 件已售"] | `product.salesCount` | GET /api/v1/products/:id | 千分位，拼接单位 |
-
-## 图片类动态内容
-
-| 设计稿图片描述 | 绑定字段 | 来源接口 | 兜底处理 |
-|--------------|---------|---------|---------|
-| [示例：用户头像] | `user.avatarUrl` | GET /api/v1/users/me | 显示默认头像 |
-| [示例：商品主图] | `product.images[0].url` | GET /api/v1/products/:id | 显示占位图 |
-| [示例：轮播图] | `banners[].imageUrl` | GET /api/v1/banners | 无数据时隐藏组件 |
-
-## 列表类动态内容
-
-| 设计稿样式 | 数据来源 | 来源接口 | 渲染说明 |
-|-----------|---------|---------|---------|
-| [示例：商品卡片（画了3张）] | `products[]` | GET /api/v1/products | 数组 map 渲染，不写死数量 |
-| [示例：评论列表] | `comments[]` | GET /api/v1/comments | 分页加载，支持上拉更多 |
-| [示例：下拉选项] | `categories[]` | GET /api/v1/categories | 设计稿选项是示例，实际来自接口 |
-
-## 条件显示类
-
-| 设计稿元素 | 显示条件 | 数据字段 | 备注 |
-|-----------|---------|---------|------|
-| [示例："已售罄"标签] | `product.stock === 0` | GET /api/v1/products/:id | 设计稿只画了有货状态 |
-| [示例：VIP 徽章] | `user.isVip === true` | GET /api/v1/users/me | 非 VIP 不显示，不占位 |
-| [示例：优惠价] | `product.discountPrice !== null` | GET /api/v1/products/:id | null 时只显示原价 |
-
-## 静态内容白名单（真正可以硬编码的内容）
-
-以下内容在设计稿中是静态的，frontend-developer 可以直接写死：
-- 页面标题（如"商品详情"、"我的订单"）
-- 按钮文案（如"立即购买"、"提交"、"取消"）
-- 表单 label（如"手机号"、"验证码"、"收货地址"）
-- 空状态提示（如"暂无数据"、"还没有订单"）
-- 导航菜单文字
-- 错误提示模板文字（如"网络错误，请重试"）
 ```
 
 ---
