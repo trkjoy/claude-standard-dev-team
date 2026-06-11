@@ -271,6 +271,7 @@ install_claude() {
     mkdir -p "$COMMANDS_DEST"
     cp "$COMMANDS_SRC/team-init.md"    "$COMMANDS_DEST/"
     cp "$COMMANDS_SRC/team-kb-save.md" "$COMMANDS_DEST/"
+    cp "$COMMANDS_SRC/team-version.md" "$COMMANDS_DEST/"
     # 清理 v1.2.0 已废弃的旧命令（老用户升级时自动移除孤立文件）
     for stale in team-install.md team-update.md; do
       if [ -f "$COMMANDS_DEST/$stale" ]; then

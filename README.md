@@ -10,9 +10,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blue.svg)](https://claude.com/claude-code)
-[![Version](https://img.shields.io/badge/Version-1.2.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.1-green.svg)](CHANGELOG.md)
 
-> 📢 **v1.2.0 安装方式变更**：仓库不再公开，原先在 Claude Code 内运行的 `/team-install`、`/team-update` 两个命令已移除。现在请**下载并解压对应版本的发布包**，在本地运行脚本：首次安装用 `scripts/install.ps1` / `scripts/install.sh`，升级用 `scripts/update.ps1` / `scripts/update.sh`。Claude Code 内仅保留 `/team-init`（初始化项目）与 `/team-kb-save`（沉淀知识库）两个命令。详见 [INSTALL.md](INSTALL.md) 与 [CHANGELOG.md](CHANGELOG.md)。
+> 📢 **v1.2.0 安装方式变更**：安装与升级改为在本地运行脚本——首次安装用 `scripts/install.ps1` / `scripts/install.sh`，升级用 `scripts/update.ps1` / `scripts/update.sh`（下载并解压对应版本的发布包后运行）。原先在 Claude Code 内运行的 `/team-install`、`/team-update` 已移除；Claude Code 内保留 `/team-init`（初始化项目）、`/team-kb-save`（沉淀知识库）、`/team-version`（查看版本）三个命令。详见 [INSTALL.md](INSTALL.md) 与 [CHANGELOG.md](CHANGELOG.md)。
 >
 > 🔐 **安全提示（信任边界）**：agent 会被安装为 `~/.claude/agents/` 下的**全局可信指令**。安装脚本只读取你本地解压的发布包，不联网拉取；安装前可自行 review 一遍 `agents/*.md` 内容。
 >

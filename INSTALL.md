@@ -9,7 +9,7 @@
 ## 安装方式
 
 > ⚠️ **安装与升级都在本地脚本完成，不在 Claude Code 内运行。**
-> 仓库不再公开，请先下载并解压对应版本的发布包，再到解压目录运行脚本。
+> 请先下载并解压对应版本的发布包，再到解压目录运行脚本。
 
 ### 方式一：脚本安装（推荐）
 
@@ -34,7 +34,7 @@ powershell -ExecutionPolicy RemoteSigned -File .\scripts\install.ps1
 - 安装 13 个 agent → `~/.claude/agents/`
 - 初始化知识库 → `~/.claude/team-memory/patterns/`
 - 分发 workflow 模板 → `~/.claude/team-workflows/`
-- 注册全局命令 → `~/.claude/commands/`（`/team-init`、`/team-kb-save` 在所有项目可用）
+- 注册全局命令 → `~/.claude/commands/`（`/team-init`、`/team-kb-save`、`/team-version` 在所有项目可用）
 
 **安装后，后续流程全在 Claude Code 内完成：**
 
@@ -95,6 +95,8 @@ cat ~/.claude/team-version        # Mac/Linux/WSL
 Get-Content $HOME\.claude\team-version   # Windows
 ```
 
+> 也可以在 Claude Code 内运行 `/team-version` 直接查看当前已安装的版本号，判断是否需要升级。
+
 ### 3. 升级方式：`update` 脚本（推荐，唯一会同步项目 CLAUDE.md 的方式）
 
 下载并解压**目标版本**的发布包，**进入你要升级的项目目录**，运行解压目录里的 update 脚本：
@@ -130,7 +132,7 @@ pwsh C:\path\to\解压目录\scripts\update.ps1
 ### 5. 升级后验证生效
 
 1. 重启 Claude Code（关闭后重新 `claude .`），确保命令列表重新加载
-2. 在 Claude Code 里输入 `/`，确认 `/team-init`、`/team-kb-save` 在命令列表中
+2. 在 Claude Code 里输入 `/`，确认 `/team-init`、`/team-kb-save`、`/team-version` 在命令列表中
 3. （可选）确认 agent 文件已更新：
 
 ```bash
@@ -165,7 +167,8 @@ rm -f ~/.claude/agents/orchestrator.md \
    ~/.claude/agents/technical-writer.md \
    ~/.claude/agents/kb-curator.md
 rm -f ~/.claude/commands/team-init.md \
-   ~/.claude/commands/team-kb-save.md
+   ~/.claude/commands/team-kb-save.md \
+   ~/.claude/commands/team-version.md
 ```
 
 ```powershell
@@ -177,7 +180,7 @@ $a = "$HOME\.claude\agents"
 'kb-curator' | ForEach-Object {
     Remove-Item "$a\$_.md" -Force -ErrorAction SilentlyContinue
 }
-Remove-Item "$HOME\.claude\commands\team-init.md","$HOME\.claude\commands\team-kb-save.md" -Force -ErrorAction SilentlyContinue
+Remove-Item "$HOME\.claude\commands\team-init.md","$HOME\.claude\commands\team-kb-save.md","$HOME\.claude\commands\team-version.md" -Force -ErrorAction SilentlyContinue
 ```
 
 ---

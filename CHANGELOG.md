@@ -6,13 +6,31 @@
 
 ---
 
+## [1.2.1] - 2026-06-11
+
+> 在 v1.2.0 基础上的小迭代：新增版本查看命令，清理无用脚本。
+
+### 新增（Added）
+
+- **`/team-version` 命令**：在 Claude Code 内一键查看当前已安装的团队版本号（读取 `~/.claude/team-version`）与全局 agents 数量，方便判断是否需要升级。`install` 脚本已将其纳入全局命令注册（Claude Code 内现共 `/team-init`、`/team-kb-save`、`/team-version` 三个命令）。
+
+### 移除（Removed）
+
+- **删除 `scripts/kb-sync.sh`**：该脚本是早期「知识库远端同步」设想的占位实现（实际只做本地 status/backup），未被任何安装/升级流程引用，远端同步能力也从未落地。知识库的沉淀与去重已由 `kb-curator` agent 和 `/team-kb-save` 负责，故移除以减少冗余。
+
+### 文案（Docs）
+
+- 安装/升级说明不再强调「仓库是否公开」，统一表述为「下载发布包后在本地运行脚本」。
+
+---
+
 ## [1.2.0] - 2026-06-11
 
-> 仓库不再公开，安装/升级不再依赖 Claude Code 内联网下载。把「升级」逻辑从 AI 命令迁移为本地脚本，精简 Claude Code 内命令集。
+> 安装/升级改为本地脚本，不再依赖 Claude Code 内联网下载。把「升级」逻辑从 AI 命令迁移为本地脚本，精简 Claude Code 内命令集。
 
 ### 变更（Changed）
 
-- **安装/升级迁移到本地脚本**：移除 `.claude/commands/team-install.md` 与 `.claude/commands/team-update.md` 两个 Claude Code 命令（它们原先会从 GitHub 克隆/下载，仓库非公开后不可用）。
+- **安装/升级迁移到本地脚本**：移除 `.claude/commands/team-install.md` 与 `.claude/commands/team-update.md` 两个 Claude Code 命令（它们原先会从 GitHub 克隆/下载，现统一改为本地发布包脚本）。
   - 新增 `scripts/update.ps1` / `scripts/update.sh`：从解压后的本地发布包运行，**不联网**。复用 `install` 刷新全局 agents/命令/知识库/workflow，并同步「运行时所在项目目录」CLAUDE.md 的「## 团队配置」段落（保留用户技术栈/部署环境字段）。可选传入项目目录参数。
   - 首次安装继续用 `scripts/install.ps1` / `scripts/install.sh`。
 - **命令重命名**：`.claude/commands/kb-save.md` → `team-kb-save.md`，使 Claude Code 内团队命令以 `team-` 前缀排列在一起。同步更新 `agents/kb-curator.md` 中的 `/kb-save` 触发引用为 `/team-kb-save`。
