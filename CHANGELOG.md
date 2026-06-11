@@ -6,6 +6,18 @@
 
 ---
 
+## [1.2.2] - 2026-06-11
+
+> 统一团队人数口径，并把 orchestrator 的 description 改写为面向使用者的视角。
+
+### 变更（Changed）
+
+- **团队人数口径统一为「15 个 agent = 1 位总指挥 + 14 名成员」**：`agents/` 目录实际已有 15 个 agent（新增的 `qa-automator` 自动化测试、`kb-curator` 知识沉淀此前未计入）。全面修订 `README.md`（标语、版本说明、架构图、成员表）、`INSTALL.md`、`docs/USAGE.md`、`templates/memory/project-CLAUDE.md`、`.claude/commands/team-init.md`、`docs/WORKFLOW_FIRST_RUN_CHECKLIST.md` 中过时的「13 agents / 12 人 / 下游 12 个」表述。README 架构图补上 `qa-automator`（质量层）与 `kb-curator`（支撑层）。
+- **`agents/orchestrator.md` 的 description 改写为使用者视角**：从内部"操作手册"口吻改为一眼说明"能解决什么"——从需求到上线的全流程开发、契约驱动、自动闭环；保留触发语"使用标准团队开发"与关键安全约束（必须由 top-level 主会话亲自担任、禁止以 subagent 启动），不影响团队调度行为。
+- **`/team-init` 与 `/team-update` 产出对齐**：`team-init` 命令生成的 CLAUDE.md 团队配置段落补上 `### 全局执行准则` 子段并同步人数，使其与 `templates/memory/project-CLAUDE.md` 模板完全一致（避免刚初始化的项目立即被 `update` 判定为需更新）。
+
+---
+
 ## [1.2.1] - 2026-06-11
 
 > 在 v1.2.0 基础上的小迭代：新增版本查看命令，清理无用脚本。

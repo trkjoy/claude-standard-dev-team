@@ -1,6 +1,6 @@
 # 使用指南：在三大 AI CLI 工具中使用标准团队
 
-本文档介绍如何在 **Claude Code**、**OpenAI Codex CLI** 和 **Gemini CLI** 中安装并使用这套 13-agent 标准 AI 开发团队。
+本文档介绍如何在 **Claude Code**、**OpenAI Codex CLI** 和 **Gemini CLI** 中安装并使用这套 15-agent 标准 AI 开发团队。
 
 ---
 
@@ -38,7 +38,7 @@ bash scripts/install.sh
 ```
 
 `install.sh` 自动完成：
-- 将 13 个 agent 复制到 `~/.claude/agents/`
+- 将 15 个 agent 复制到 `~/.claude/agents/`
 - 初始化用户级知识库 `~/.claude/team-memory/patterns/`（已存在则跳过）
 
 **第二步：在项目目录初始化（每个新项目做一次）**
@@ -84,7 +84,7 @@ powershell -ExecutionPolicy RemoteSigned -File .\scripts\install.ps1
 ```
 
 `install.ps1` 自动完成：
-- 将 13 个 agent 复制到 `%USERPROFILE%\.claude\agents\`
+- 将 15 个 agent 复制到 `%USERPROFILE%\.claude\agents\`
 - 初始化用户级知识库 `%USERPROFILE%\.claude\team-memory\patterns\`（已存在则跳过）
 
 **第二步：在项目目录初始化（每个新项目做一次）**

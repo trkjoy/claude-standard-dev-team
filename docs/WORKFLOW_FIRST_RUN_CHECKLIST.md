@@ -57,7 +57,7 @@
   - FAIL 后是否正确重试（最多 3 次总尝试 = 1 初始 + 2 重试）？
   - 最终 PASS/FAIL 状态是否准确？
 
-- [ ] **Workflow 复用的是现有 13 个 agent，不是新建 agent**
+- [ ] **Workflow 复用的是现有团队 agent，不是新建 agent**
   - 检查 Workflow 日志中 `agentType` 的值是否都来自已有列表：
     - backend-architect / frontend-developer / testing-evidence-collector / 
     - code-reviewer / security-engineer / devops-automator 等

@@ -4,25 +4,25 @@
 
 # Claude Standard Dev Team
 
-> 让 Claude Code 拥有一支 12 人 AI 软件开发团队 + 1 位总指挥，从需求到上线全流程自动跑通。
+> 让 Claude Code 拥有一支 14 人 AI 软件开发团队 + 1 位总指挥，从需求到上线全流程自动跑通。
 
-> ⚙️ **版本说明**：D1 视频录制时是 11 人版本，现仓库已迭代到 **12 人 + 1 位总指挥（orchestrator）**——这套团队仍在进化。
+> ⚙️ **版本说明**：D1 视频录制时是 11 人版本，现仓库已迭代到 **14 人 + 1 位总指挥（orchestrator），共 15 个 agent**——这套团队仍在进化。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blue.svg)](https://claude.com/claude-code)
-[![Version](https://img.shields.io/badge/Version-1.2.1-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.2-green.svg)](CHANGELOG.md)
 
 > 📢 **v1.2.0 安装方式变更**：安装与升级改为在本地运行脚本——首次安装用 `scripts/install.ps1` / `scripts/install.sh`，升级用 `scripts/update.ps1` / `scripts/update.sh`（下载并解压对应版本的发布包后运行）。原先在 Claude Code 内运行的 `/team-install`、`/team-update` 已移除；Claude Code 内保留 `/team-init`（初始化项目）、`/team-kb-save`（沉淀知识库）、`/team-version`（查看版本）三个命令。详见 [INSTALL.md](INSTALL.md) 与 [CHANGELOG.md](CHANGELOG.md)。
 >
 > 🔐 **安全提示（信任边界）**：agent 会被安装为 `~/.claude/agents/` 下的**全局可信指令**。安装脚本只读取你本地解压的发布包，不联网拉取；安装前可自行 review 一遍 `agents/*.md` 内容。
 >
-> 📢 **v1.0.7 架构级修复**：orchestrator 被作为 subagent 启动时无法派发下游团队（"can't dispatch further agents"）。现已明确——orchestrator 必须由 top-level 主会话亲自担任，只有下游 12 个 agent 才用 Task 派发。详见 [CHANGELOG.md](CHANGELOG.md)。
+> 📢 **v1.0.7 架构级修复**：orchestrator 被作为 subagent 启动时无法派发下游团队（"can't dispatch further agents"）。现已明确——orchestrator 必须由 top-level 主会话亲自担任，只有下游 agent 才用 Task 派发。详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
 ## 这是什么
 
-一套面向 [Claude Code](https://claude.com/claude-code) 的 **agent 团队配置**，把"软件开发"拆成 12 个专业岗位 + 1 位总指挥，按真实研发团队的协作链路串起来：
+一套面向 [Claude Code](https://claude.com/claude-code) 的 **agent 团队配置**，把"软件开发"拆成 14 个专业岗位 + 1 位总指挥，按真实研发团队的协作链路串起来：
 
 - **不再是 1 个 AI 一锅煮**：每个 agent 只干一件事，互不交叉
 - **契约驱动**：先定 PRD/API/Schema，再让所有人照契约写
@@ -44,21 +44,22 @@
         ┌────────────────────────┼────────────────────────┐
         │                        │                        │
 ┌───────▼─────┐         ┌────────▼────────┐      ┌────────▼─────┐
-│  规划层 2   │         │   实现层 5      │      │  质量层 4     │
+│  规划层 2   │         │   实现层 5      │      │  质量层 5     │
 ├──────────── │         ├─────────────────│      ├──────────────│
 │ pm          │         │ db-optimizer    │      │ ev-collector │
-│ sw-architect│         │ backend-arch    │      │ sec-engineer │
-│             │         │ ui-designer     │      │ code-reviewer│
-│             │         │ frontend-dev    │      │ reality-chk  │
-│             │         │ devops-automator│      └──────────────┘
-└─────────────┘         └─────────────────┘
+│ sw-architect│         │ backend-arch    │      │ qa-automator │
+│             │         │ ui-designer     │      │ sec-engineer │
+│             │         │ frontend-dev    │      │ code-reviewer│
+│             │         │ devops-automator│      │ reality-chk  │
+└─────────────┘         └─────────────────┘      └──────────────┘
                                                   ┌──────────────┐
-                                                  │  文档层 1    │
+                                                  │  支撑层 2    │
                                                   │ tech-writer  │
+                                                  │ kb-curator   │
                                                   └──────────────┘
 ```
 
-**总指挥 1 + 团队成员 12 = 12 人 AI 团队（不含总指挥）**
+**总指挥 1 + 团队成员 14 = 15 个 agent（不含总指挥则 14 人团队）**
 
 | 层级 | Agent | 职责 |
 |---|---|---|
@@ -71,10 +72,12 @@
 | **实现** | frontend-developer | 前端实现，禁止硬编码 API 路径 |
 | **实现** | devops-automator | Dockerfile / docker-compose / CI/CD / 部署路径前缀检查 |
 | **质量** | testing-evidence-collector | 任务级 QA，独立验证每个接口字段路径 |
+| **质量** | qa-automator | 把验收标准沉淀成可长期重跑的自动化测试套件（unit / integration / e2e） |
 | **质量** | security-engineer | 威胁建模 + 漏洞扫描 + OWASP 检查 |
 | **质量** | code-reviewer | 正确性 / 可维护性 / 性能复审 |
 | **质量** | reality-checker | 最终验收官，默认"需要返工"，要压倒性证据才放行上线 |
-| **文档** | technical-writer | README / API 文档 / 教程，让别人能读懂 |
+| **支撑** | technical-writer | README / API 文档 / 教程，让别人能读懂 |
+| **支撑** | kb-curator | 把已验证的修复经验沉淀进用户级知识库，供后续项目复用 |
 
 ---
 
@@ -167,7 +170,7 @@ orchestrator 会自动接管：扫描需求 → 调 product-manager 写 PRD → 
 
 | 维度 | 裸 Claude Code | 标准团队 |
 |---|---|---|
-| 角色边界 | 1 个 AI 全干 | 13 个 agent 各司其职 |
+| 角色边界 | 1 个 AI 全干 | 15 个 agent 各司其职 |
 | 契约约束 | 无（边写边改） | 必须先定 PRD/API/Schema |
 | QA 验证 | 写完了说"应该 OK"| 任务级 QA Agent 独立验证 |
 | 打回机制 | 没有 | 4 类规则 + 重试上限 |

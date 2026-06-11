@@ -31,7 +31,7 @@ powershell -ExecutionPolicy RemoteSigned -File .\scripts\install.ps1
 ```
 
 `install` 脚本会自动完成：
-- 安装 13 个 agent → `~/.claude/agents/`
+- 安装 15 个 agent → `~/.claude/agents/`
 - 初始化知识库 → `~/.claude/team-memory/patterns/`
 - 分发 workflow 模板 → `~/.claude/team-workflows/`
 - 注册全局命令 → `~/.claude/commands/`（`/team-init`、`/team-kb-save`、`/team-version` 在所有项目可用）
@@ -114,7 +114,7 @@ pwsh C:\path\to\解压目录\scripts\update.ps1
 > 也可显式指定项目目录：`bash .../scripts/update.sh /path/to/your-project`。
 
 它会一次性完成两件事：
-1. **刷新全局**：更新 `~/.claude/` 下的 13 个 agent、命令、知识库（已存在不覆盖）、workflow 模板
+1. **刷新全局**：更新 `~/.claude/` 下的 15 个 agent、命令、知识库（已存在不覆盖）、workflow 模板
 2. **同步项目**：把**当前项目** CLAUDE.md 的「## 团队配置」段落同步到发布包版本（保留你的技术栈/部署环境字段）
 
 > 若只想刷新全局、不动任何项目 CLAUDE.md，直接重跑 `scripts/install.sh` / `scripts/install.ps1` 即可。
