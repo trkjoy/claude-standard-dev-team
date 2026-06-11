@@ -134,6 +134,8 @@ description: 在当前目录初始化标准团队项目（交互式收集配置�
 
 逐一检查以下文件，**已存在则跳过，不存在则用 Write 工具生成**：
 
+> 注：`GOAL.md` **不在此处预建**。它只对长链路任务（完整项目 / 大规模迁移 / 多轮 Audit-Fix）有意义，由 orchestrator 在这类任务**启动时按需创建**（YAGNI 边界）。单任务 / Hotfix / 纯文档不需要它，因此 init 不预置，避免每个项目都留一个空文件。
+
 **STATE.md：**
 ```markdown
 # Team State

@@ -196,8 +196,13 @@ C. 复杂度评估
 
 D. 是否有现成内置模板可用？
    - 完整新项目 → 使用「完整项目开发模板」
+   - 在现有项目加功能（功能新增）→ 走「完整项目开发模板」的 Phase 2→11 子集：
+       跳过 Phase 0（建目录）和 Phase 1（从零 PRD），改为读现有 docs/契约做**增量**——
+       software-architect 增量更新 API_CONTRACT/DB_SCHEMA/TECH_SPEC（只加不破坏现有契约）→
+       Dev-QA Loop（Phase 4-6.5）→ 安全/Review（Phase 7-8）→ 部署（Phase 9）→ 验收（Phase 10）。
+       **质量门不跳过**。需求模糊时先走 Step 1.5 头脑风暴。
    - 线上 Bug 修复 → 使用「Hotfix 模板」
-   - 仅代码审查 → 使用「Audit 模板」
+   - 仅代码审查 / "看完再改" → 使用「Audit 模板」；其中"看完再改"在 Audit 汇报后**直接进 Audit-Fix**（无需二次确认修复意图）
    - 其他 → 继续 Step 1.5
 ```
 
@@ -324,8 +329,10 @@ FOR 每个任务：
     要求对应 agent 在声明完成前运行验证命令，提供实际输出作为证据
     禁止仅凭主观判断报告"已完成"
 
-  STEP C - 验证：
+  STEP C - 验证（按变更类型选验证方）：
     有 UI 变更 / API 实现 / Bug 修复 → 调用 testing-evidence-collector
+    纯测试任务（补/跑测试）→ 调用 qa-automator 产出并跑测试，全绿即 PASS
+    纯部署 / 运维任务 → 调用 testing-evidence-collector 验证部署结果（健康检查 + 路径前缀），orchestrator 核对部署路径检查清单
     纯文档 / 纯配置 / 纯设计规范 → 由 orchestrator 对照验收标准检查
     输出：PASS 或 FAIL + 原因
 

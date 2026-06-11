@@ -51,11 +51,14 @@ const DIMENSION_AGENT_MAP = {
   contract:    "code-reviewer",      // 契约一致性（字段/路径/状态码）
 };
 
-// 对抗式验证使用的 agent（保持独立视角，不与扫描 agent 相同）
-// 安全维度由 code-reviewer 反驳，其余维度由 security-engineer 反驳，确保与扫描 agent 不同
+// 对抗式验证使用的 agent —— 两票都必须与「扫描 agent」不同，保证独立性。
+// 第1票：安全维度由 code-reviewer 反驳，其余维度由 security-engineer 反驳（均 ≠ 扫描者）。
+// 第2票：固定用 reality-checker —— 它从不参与扫描，天然独立，且本职就是怀疑式验证，
+//         避免此前"第2票投回扫描 agent 自己"导致独立性形同虚设的问题。
 function resolveRefuteAgentType(dimension) {
   return dimension === "security" ? "code-reviewer" : "security-engineer";
 }
+const SECOND_VOTE_AGENT = "reality-checker";
 
 // ─────────────────────────────────────────────
 // 阶段1：多维度并行扫描
@@ -185,25 +188,33 @@ async function runAdversarialVerification(allFindings, confirmThreshold) {
       return runSingleVote(finding, 1);
     },
 
-    // 投票轮次2：第二个独立 agent 审查（不同 agentType，保证独立性）
+    // 投票轮次2：第二个独立 agent（reality-checker）审查
     async (voteContext) => {
+      if (!voteContext) return null; // 上一阶段异常被降为 null，安全跳过
       const vote2 = await runSingleVote(voteContext.finding, 2);
-      const votes = [voteContext.vote, vote2.vote];
+      const votes = [voteContext.vote, vote2.vote].filter(Boolean);
       const confirmedCount = votes.filter((v) => v.confirmed).length;
-      const isConfirmed = confirmedCount >= confirmThreshold;
+
+      // 严重程度感知的确认规则（安全审计：宁可误报勿漏报）：
+      //   critical / high → 任一票确认即保留，并标记 needsHumanReview（不被单票误判静默丢弃）
+      //   medium / low    → 需达到 confirmThreshold 票（默认 2，降噪）
+      const sev = voteContext.finding.severity;
+      const isHigh = sev === "critical" || sev === "high";
+      const isConfirmed = isHigh ? confirmedCount >= 1 : confirmedCount >= confirmThreshold;
+      const needsHumanReview = isHigh && confirmedCount < 2; // 高危但非全票 → 提请人工复核
 
       return {
         finding: voteContext.finding,
         votes,
         confirmedCount,
         isConfirmed,
-        // 合并两轮的补充建议
+        needsHumanReview,
         suggestions: votes.flatMap((v) => v.suggestions ?? []),
       };
     },
   );
 
-  const confirmed = verifiedFindings.filter((r) => r.isConfirmed);
+  const confirmed = verifiedFindings.filter(Boolean).filter((r) => r.isConfirmed);
   log(`对抗验证完成 — 确认真问题：${confirmed.length} / 总发现：${flatFindings.length}`);
   return verifiedFindings;
 }
@@ -218,7 +229,7 @@ async function runSingleVote(finding, round) {
   // 两轮使用不同 agentType，确保独立视角
   const agentType = round === 1
     ? resolveRefuteAgentType(finding.dimension)
-    : DIMENSION_AGENT_MAP[finding.dimension] ?? "code-reviewer";
+    : SECOND_VOTE_AGENT;
 
   log(`[对抗] 第${round}票 维度=${finding.dimension} 严重程度=${finding.severity} agent=${agentType}`);
 
@@ -258,6 +269,11 @@ async function runSingleVote(finding, round) {
     },
   });
 
+  // 容错：agent 无响应 / schema 校验失败返回 null 时，不让整条 pipeline 崩。
+  // 记为 confirmed=false，但严重程度判定在上层做（critical/high 任一票确认即保留）。
+  if (!voteResult) {
+    return { finding, vote: { confirmed: false, reason: "验证 agent 无响应（已容错）", suggestions: [] } };
+  }
   return { finding, vote: voteResult };
 }
 
@@ -269,25 +285,26 @@ async function runSingleVote(finding, round) {
 function deduplicateAndSummarize(verifiedFindings) {
   phase("去重汇总");
 
-  const confirmed = verifiedFindings.filter((r) => r.isConfirmed);
+  const confirmed = verifiedFindings.filter(Boolean).filter((r) => r.isConfirmed);
 
-  // 简单去重：相同 filePath + 相同 dimension 的问题合并
-  // TODO（接入时可改用更精细的相似度算法）
+  // 简单去重：filePath + dimension + 描述前 40 字 + 行号提示（加 lineHint，避免把同文件
+  // 同维度下两个前 40 字相同、实际不同的问题误并）
   const seen = new Set();
   const unique = [];
   for (const item of confirmed) {
-    const key = `${item.finding.filePath}::${item.finding.dimension}::${item.finding.description.slice(0, 40)}`;
+    const key = `${item.finding.filePath}::${item.finding.dimension}::${item.finding.description.slice(0, 40)}::${item.finding.lineHint ?? ""}`;
     if (!seen.has(key)) {
       seen.add(key);
       unique.push({
-        filePath:    item.finding.filePath,
-        lineHint:    item.finding.lineHint ?? "",
-        description: item.finding.description,
-        severity:    item.finding.severity,
-        dimension:   item.finding.dimension,
-        category:    item.finding.category ?? "",
-        confirmedBy: item.confirmedCount,
-        suggestions: item.suggestions ?? [],
+        filePath:        item.finding.filePath,
+        lineHint:        item.finding.lineHint ?? "",
+        description:     item.finding.description,
+        severity:        item.finding.severity,
+        dimension:       item.finding.dimension,
+        category:        item.finding.category ?? "",
+        confirmedBy:     item.confirmedCount,
+        needsHumanReview: item.needsHumanReview ?? false,
+        suggestions:     item.suggestions ?? [],
       });
     }
   }
@@ -309,8 +326,15 @@ log("Audit 多维并行扫描启动");
 // 从 args 解构参数，提供安全默认值
 const targets           = args.targets           ?? ["src/"];
 const dimensions        = args.dimensions        ?? ["bug", "performance", "security", "contract"];
-const confirmThreshold  = args.confirmThreshold  ?? 2;
 const contractPath      = args.contractPath      ?? "docs/API_CONTRACT.md";
+
+// 本脚本固定产生 2 票，confirmThreshold 只在 [1,2] 有意义。
+// 钳制以消除"传 3 则 >=3 永远不成立、所有问题被静默全丢"的配置陷阱。
+const rawThreshold      = args.confirmThreshold  ?? 2;
+const confirmThreshold  = Math.max(1, Math.min(2, rawThreshold));
+if (rawThreshold !== confirmThreshold) {
+  log(`⚠️ confirmThreshold=${rawThreshold} 超出 [1,2]，已钳制为 ${confirmThreshold}（本脚本固定 2 票；注意 critical/high 恒为任一票确认即保留）`);
+}
 
 log(`目标路径：${targets.join(", ")}`);
 log(`扫描维度：${dimensions.join(", ")}`);
@@ -340,6 +364,8 @@ return {
       medium:   confirmedIssues.filter((i) => i.severity === "medium").length,
       low:      confirmedIssues.filter((i) => i.severity === "low").length,
     },
+    // 高危但未获全票的项数 —— orchestrator 应提请用户人工复核
+    needsHumanReview: confirmedIssues.filter((i) => i.needsHumanReview).length,
   },
   // 已去重、已排序的确认问题清单，供 orchestrator 写入报告
   issues: confirmedIssues,

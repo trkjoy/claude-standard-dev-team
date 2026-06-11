@@ -103,7 +103,10 @@ IMPL_SUMMARY: <一句话描述完成了什么，包含关键文件路径>
  */
 async function stageVerify(context) {
   phase("QA 验证阶段");
-  const { task, implResult } = context;
+  if (!context) return null; // 实现阶段异常被降为 null，安全跳过
+  const { task } = context;
+  let currentImpl = context.implResult;                 // 会随每次修复更新
+  const implAgent = resolveImplementAgentType(task.layer ?? "backend");
 
   // 最多执行 1 次初始验证 + 2 次重试 = 共 3 次机会
   const MAX_ATTEMPTS = 3;
@@ -121,10 +124,10 @@ async function stageVerify(context) {
 ${task.acceptanceCriteria}
 
 【实现摘要】
-${implResult?.implSummary ?? "（无摘要）"}
+${currentImpl?.implSummary ?? "（无摘要）"}
 
 【改动文件】
-${(implResult?.filesChanged ?? []).join("\n") || "（未提供）"}
+${(currentImpl?.filesChanged ?? []).join("\n") || "（未提供）"}
 
 ${attempt > 1 ? `【上次失败原因】\n${lastVerifyResult?.failReason ?? "未知"}\n` : ""}
 
@@ -134,7 +137,7 @@ ${attempt > 1 ? `【上次失败原因】\n${lastVerifyResult?.failReason ?? "�
 - failReason: 若 FAIL，简要说明失败原因（供重试参考）
     `.trim();
 
-    const verifyResult = await agent(verifyPrompt, {
+    const verifyResultRaw = await agent(verifyPrompt, {
       label: `QA-${task.id}-attempt${attempt}`,
       phase: "QA 验证阶段",
       agentType: "testing-evidence-collector",
@@ -149,6 +152,8 @@ ${attempt > 1 ? `【上次失败原因】\n${lastVerifyResult?.failReason ?? "�
       },
     });
 
+    // 容错：QA agent 无响应 / schema 失败时不崩，按 FAIL 处理
+    const verifyResult = verifyResultRaw ?? { verdict: "FAIL", evidence: "", failReason: "QA agent 无响应（已容错）" };
     lastVerifyResult = verifyResult;
 
     if (verifyResult.verdict === "PASS") {
@@ -158,14 +163,51 @@ ${attempt > 1 ? `【上次失败原因】\n${lastVerifyResult?.failReason ?? "�
         verdict: "PASS",
         attempts: attempt,
         evidence: verifyResult.evidence,
-        implSummary: implResult?.implSummary ?? "",
+        implSummary: currentImpl?.implSummary ?? "",
       };
     }
 
-    // FAIL：若还有重试机会，继续循环；否则标记最终失败
+    // FAIL：若还有重试机会，先派实现 agent **按失败原因真正修复**（而非重验同一份代码），
+    // 用修复后的结果再进入下一轮验证——否则重试只是空转。
     if (attempt < MAX_ATTEMPTS) {
-      log(`[${task.id}] QA FAIL，准备第 ${attempt + 1} 次重试。原因：${verifyResult.failReason}`);
-      // 重试前可在此补充：通知实现 agent 修复（TODO：如需自动修复可在此调用 agent）
+      log(`[${task.id}] QA FAIL，派 ${implAgent} 按失败原因修复后再验。原因：${verifyResult.failReason}`);
+      const fixPrompt = `
+你是团队 ${implAgent}，上一版实现未通过 QA，请**按失败原因修复**（只改必要处，不重写）。
+
+【任务编号】${task.id}
+【任务描述】
+${task.description}
+
+【相关契约片段】
+${task.contractSnippet ?? "（无契约片段，请参考 docs/API_CONTRACT.md）"}
+
+【验收标准】
+${task.acceptanceCriteria}
+
+【上一版实现摘要】
+${currentImpl?.implSummary ?? "（无）"}
+
+【QA 失败原因】
+${verifyResult.failReason ?? "未提供"}
+
+修复后用以下格式汇报：
+IMPL_SUMMARY: <一句话描述修复了什么，包含关键文件路径>
+      `.trim();
+
+      const fixResult = await agent(fixPrompt, {
+        label: `修复-${task.id}-attempt${attempt}`,
+        phase: "实现阶段",
+        agentType: implAgent,
+        schema: {
+          type: "object",
+          properties: {
+            implSummary: { type: "string" },
+            filesChanged: { type: "array", items: { type: "string" } },
+          },
+          required: ["implSummary"],
+        },
+      });
+      if (fixResult) currentImpl = fixResult; // 用修复后的实现进入下一轮验证
     }
   }
 
@@ -177,7 +219,7 @@ ${attempt > 1 ? `【上次失败原因】\n${lastVerifyResult?.failReason ?? "�
     attempts: MAX_ATTEMPTS,
     evidence: lastVerifyResult?.evidence ?? "",
     failReason: lastVerifyResult?.failReason ?? "超过最大重试次数",
-    implSummary: implResult?.implSummary ?? "",
+    implSummary: currentImpl?.implSummary ?? "",
   };
 }
 
@@ -200,10 +242,12 @@ const results = await pipeline(
 // ─────────────────────────────────────────────
 // 汇总：输出 PASS/FAIL 清单供 orchestrator 写入 STATE.md
 // ─────────────────────────────────────────────
-const passed = results.filter((r) => r.verdict === "PASS");
-const failed = results.filter((r) => r.verdict === "FAIL");
+const cleanResults = results.filter(Boolean); // 丢弃异常降级为 null 的任务项
+const passed = cleanResults.filter((r) => r.verdict === "PASS");
+const failed = cleanResults.filter((r) => r.verdict === "FAIL");
 
-log(`流水线完成 — PASS: ${passed.length} / FAIL: ${failed.length} / 总计: ${results.length}`);
+const dropped = results.length - cleanResults.length;
+log(`流水线完成 — PASS: ${passed.length} / FAIL: ${failed.length} / 异常丢弃: ${dropped} / 总计: ${results.length}`);
 
 // 返回值结构由 orchestrator 接收并写入 team-state/STATE.md
 return {
@@ -211,7 +255,8 @@ return {
     total: results.length,
     passed: passed.length,
     failed: failed.length,
+    dropped, // 因 agent 异常被降级丢弃的任务数（orchestrator 应对这些任务转人工）
   },
   // 每项含 taskId / verdict / attempts / evidence / implSummary / failReason(可选)
-  results,
+  results: cleanResults,
 };

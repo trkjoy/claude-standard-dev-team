@@ -384,7 +384,7 @@ frontend:
 > ⚠️ **缺少 build args 时**，前端 `import.meta.env.VITE_API_BASE` 为 undefined，
 > 所有 API 请求路径退回 `/api/...`，生产环境必然 404，这是最常见的部署问题。
 
-**同时必须生成 `frontend/nginx.conf`**（SPA 路由 + 路径前缀处理，由 frontend-developer 负责生成）：
+**`frontend/nginx.conf`**（SPA 路由 + 路径前缀处理）——**由 frontend-developer 生成**；devops 在此仅规定其必须满足的内容要求（下方模板），并在部署阶段核对其存在与正确：
 ```nginx
 server {
     listen 80;

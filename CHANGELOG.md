@@ -6,6 +6,25 @@
 
 ---
 
+## [1.3.5] - 2026-06-11
+
+> 第五批修复：workflow 脚本对抗式验证的设计缺陷、重试空转、agent 权限收口与路由空隙。
+
+### 修复（Fixed）
+
+- **[HIGH] audit-scan 对抗式验证会漏报高危**：原 `confirmThreshold=2` 是 AND 逻辑（两票全过才算真问题），任一 refute agent 对真 critical 投 false 就被**静默丢弃**；且第 2 票投回扫描 agent 自己、独立性形同虚设；传 `confirmThreshold=3` 还会全丢。已改为：第 2 票固定用 **reality-checker**（从不参与扫描）；**severity 感知**——critical/high 任一票确认即保留并标记 `needsHumanReview`，medium/low 才需阈值票；`confirmThreshold` 钳制到 [1,2]；agent 返回 null/抛错全程容错（`filter(Boolean)` + 兜底），不再炸整条 pipeline；去重 key 加入 lineHint 防误并。
+- **[HIGH] team-dev-loop 重试空转**：原 FAIL 后只是重验**同一份未改代码**，3 次必然同结论。改为 FAIL 后**先派实现 agent 按失败原因真正修复**、用修复后的结果再验；并加 null 容错与异常任务降级统计（`dropped`）。
+- **[MEDIUM] 审查类 agent 权限全开**：`code-reviewer` / `security-engineer` / `technical-writer` 此前 frontmatter 无 `tools`，继承全工具（含 Edit/Task）。按最小权限收口——审查/安全只给 `Read, Glob, Grep, Bash, Write`（不给 Edit/Task，不改业务代码）；并在两者正文显式声明产出 `docs/REVIEW_REPORT.md` / `docs/SECURITY_REPORT.md`。
+- **[MEDIUM] technical-writer 模型倒挂**：要跑代码核对契约写 API_DOC 却是 `haiku`，升 `sonnet`，补 `tools`。
+- **[MEDIUM] 路由空隙补齐**：Step 1.D 新增「功能新增」去向（走完整模板 Phase 2→11 子集做增量、不跳质量门）、「看完再改」明确归 Audit→Audit-Fix；Step C 验证补「纯测试→qa-automator / 纯部署→testing-evidence-collector」归属。
+- **[LOW] ui-designer 自相矛盾**：description 暗示"重构样式层"但正文说"只出规范"、却带 Edit 工具。去掉 Edit、description 改为"只产出规范+报告，实际重构由 frontend-developer 执行"。
+- **[LOW] GOAL.md 创建归属**：team-init Step 6 注明 GOAL.md 由 orchestrator 长链路启动时按需创建、init 不预置（YAGNI）。
+- **[LOW] devops nginx.conf 归属表述自相矛盾**：明确由 frontend-developer 生成、devops 只规定内容要求并在部署时核对。
+
+> 本批改动：两个 `templates/workflows/*.workflow.js`、`code-reviewer.md`、`security-engineer.md`、`technical-writer.md`、`ui-designer.md`、`devops-automator.md`、`orchestrator.md`、`.claude/commands/team-init.md`。两 workflow 脚本已通过 `node --check`。仍余少量纯文案项（product-manager 模板示例值、update.ps1 措辞）未动。
+
+---
+
 ## [1.3.4] - 2026-06-11
 
 > 第四批修复：修好"坏掉的验收闸口"，统一技术栈占位串，收紧 team-init 生成的安全门。
