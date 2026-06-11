@@ -4,6 +4,11 @@
 # 版本相同则幂等跳过，版本不同则覆盖更新
 $ErrorActionPreference = 'Stop'
 
+# 全脚本包一层 try/finally：无论正常结束、已是最新(exit 0)还是出错(exit 1)，
+# finally 都会执行暂停，避免窗口一闪而过看不到信息。exit 码原样保留。
+# 被 update.ps1 以子进程调用时会设 TEAM_SKIP_PAUSE=1，此时不暂停（否则会卡住 update）。
+try {
+
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoDir     = Split-Path -Parent $ScriptDir
 $AgentsSrc    = Join-Path $RepoDir 'agents'
@@ -500,5 +505,13 @@ switch ($Platform) {
     default    {
         Write-Host "不支持的平台：$Platform" -ForegroundColor Red
         exit 1
+    }
+}
+
+}
+finally {
+    if ($env:TEAM_SKIP_PAUSE -ne '1' -and [Environment]::UserInteractive) {
+        Write-Host ''
+        Read-Host '按回车键退出（窗口将关闭）' | Out-Null
     }
 }

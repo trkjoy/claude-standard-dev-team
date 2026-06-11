@@ -14,6 +14,10 @@
 #     pwsh <解压目录>\scripts\update.ps1 D:\path\to\your-project
 $ErrorActionPreference = 'Stop'
 
+# 全脚本包一层 try/finally：无论正常结束还是中途 exit，finally 都会暂停，
+# 避免窗口一闪而过看不到升级结果（含「已跳过同步」等提示）。exit 码原样保留。
+try {
+
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoDir     = Split-Path -Parent $ScriptDir
 $VersionFile = Join-Path $RepoDir 'VERSION'
@@ -49,7 +53,10 @@ if (-not (Test-Path $InstallScript)) {
 }
 Write-Host '[1/2] 刷新全局（~/.claude/agents、命令、知识库、workflow）...' -ForegroundColor Cyan
 $psExe = (Get-Process -Id $PID).Path
+# 子进程跑 install.ps1：设哨兵让其跳过末尾暂停，否则 update 会卡在这里等回车。
+$env:TEAM_SKIP_PAUSE = '1'
 & $psExe -NoProfile -ExecutionPolicy RemoteSigned -File $InstallScript claude 1
+Remove-Item Env:\TEAM_SKIP_PAUSE -ErrorAction SilentlyContinue
 if ($LASTEXITCODE -ne 0) {
     Write-Host "全局刷新失败（install.ps1 退出码 $LASTEXITCODE）" -ForegroundColor Red
     exit 1
@@ -125,3 +132,11 @@ Write-Host ''
 Write-Host '⚠️ 重启 Claude Code 让新 agent 与命令生效。' -ForegroundColor Yellow
 Write-Host '========================================='
 Write-Host ''
+
+}
+finally {
+    if ($env:TEAM_SKIP_PAUSE -ne '1' -and [Environment]::UserInteractive) {
+        Write-Host ''
+        Read-Host '按回车键退出（窗口将关闭）' | Out-Null
+    }
+}

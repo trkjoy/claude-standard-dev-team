@@ -6,6 +6,18 @@
 
 ---
 
+## [1.4.1] - 2026-06-11
+
+> install/update 脚本运行完不再一闪而退，结束前等待回车，便于查看安装/升级结果。
+
+### 改进（Changed）
+
+- **`install.ps1` / `update.ps1` 结束前暂停等回车**：双击或运行完直接退出、看不到结果（含 update 的「已跳过同步」等提示）的问题。把整个脚本体包进 `try { ... } finally { 暂停 }`——无论正常结束、`exit 0`（已是最新）还是 `exit 1`（出错），finally 都会执行暂停，且 `exit` 码原样保留（已实测 finally 在 exit 时触发、退出码不变）。
+  - 暂停带双重守卫：`[Environment]::UserInteractive` 为假（CI/非交互）时不暂停，避免挂起；`update.ps1` 以子进程调用 `install.ps1` 前设 `TEAM_SKIP_PAUSE=1`、调用后清除，使子进程不暂停（否则会卡住 update），而 update 自身结束仍正常暂停。
+  - 仅 PowerShell 脚本改动；`.ps1` 业务逻辑零变化，两文件均通过语法解析校验。
+
+---
+
 ## [1.4.0] - 2026-06-11
 
 > 新增 Windows `.cmd` 启动器，新电脑首次安装/升级无需先手动放行 PowerShell 执行策略。
