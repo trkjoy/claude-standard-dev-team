@@ -4,9 +4,9 @@
 
 # Claude Standard Dev Team
 
-> 让 Claude Code 拥有一支 14 人 AI 软件开发团队 + 1 位总指挥，从需求到上线全流程自动跑通。
+> 让 Claude Code 拥有一支 15 人 AI 软件开发团队 + 1 位总指挥，从需求到上线全流程自动跑通。
 
-> ⚙️ **版本说明**：D1 视频录制时是 11 人版本，现仓库已迭代到 **14 人 + 1 位总指挥（orchestrator），共 15 个 agent**——这套团队仍在进化。
+> ⚙️ **版本说明**：D1 视频录制时是 11 人版本，现仓库已迭代到 **15 人 + 1 位总指挥（orchestrator），共 16 个 agent**——这套团队仍在进化。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blue.svg)](https://claude.com/claude-code)
@@ -22,7 +22,7 @@
 
 ## 这是什么
 
-一套面向 [Claude Code](https://claude.com/claude-code) 的 **agent 团队配置**，把"软件开发"拆成 14 个专业岗位 + 1 位总指挥，按真实研发团队的协作链路串起来：
+一套面向 [Claude Code](https://claude.com/claude-code) 的 **agent 团队配置**，把"软件开发"拆成 15 个专业岗位 + 1 位总指挥，按真实研发团队的协作链路串起来：
 
 - **不再是 1 个 AI 一锅煮**：每个 agent 只干一件事，互不交叉
 - **契约驱动**：先定 PRD/API/Schema，再让所有人照契约写
@@ -59,7 +59,7 @@
                                                   └──────────────┘
 ```
 
-**总指挥 1 + 团队成员 14 = 15 个 agent（不含总指挥则 14 人团队）**
+**总指挥 1 + 团队成员 15 = 16 个 agent（不含总指挥则 15 人团队）**
 
 | 层级 | Agent | 职责 |
 |---|---|---|
@@ -68,7 +68,8 @@
 | **规划** | software-architect | 技术选型 + 生成 API_CONTRACT / DB_SCHEMA / TECH_SPEC（最关键） |
 | **实现** | ui-designer | 视觉规范 / 设计系统 / variables.css |
 | **实现** | database-optimizer | 数据库迁移文件 + Model 层 + 索引设计 |
-| **实现** | backend-architect | 严格按 API 契约实现接口 |
+| **实现** | backend-architect | 严格按 API 契约实现接口（Node/TS 等非 go-zero 栈） |
+| **实现** | go-zero-engineer | go-zero Go 后端：把 API 契约翻译成 .api、goctl 生成骨架、logic 实现（单体 HTTP 服务） |
 | **实现** | frontend-developer | 前端实现，禁止硬编码 API 路径 |
 | **实现** | devops-automator | Dockerfile / docker-compose / CI/CD / 部署路径前缀检查 |
 | **质量** | testing-evidence-collector | 任务级 QA，独立验证每个接口字段路径 |
@@ -92,8 +93,8 @@ Phase 2   → software-architect   → API_CONTRACT.md / DB_SCHEMA.md / TECH_SPE
 Phase 2.5 → ui-designer          → DESIGN_SYSTEM.md / variables.css
 Phase 3   orchestrator 自己拆任务清单
 Phase 4   → database-optimizer   → migrations/
-Phase 5   → backend-architect    │ ┐ Dev-QA Loop
-          → ev-collector         │ │ 逐任务循环
+Phase 5   → backend-architect / go-zero-engineer  │ ┐ Dev-QA Loop（按 TECH_SPEC 后端框架二选一）
+          → ev-collector                          │ │ 逐任务循环
 Phase 6   → frontend-developer   │ ┐ Dev-QA Loop
           → ev-collector         │ │ 逐任务循环
 Phase 7   → security-engineer    → SECURITY_REPORT.md
@@ -176,7 +177,7 @@ orchestrator 会自动接管：扫描需求 → 调 product-manager 写 PRD → 
 
 | 维度 | 裸 Claude Code | 标准团队 |
 |---|---|---|
-| 角色边界 | 1 个 AI 全干 | 15 个 agent 各司其职 |
+| 角色边界 | 1 个 AI 全干 | 16 个 agent 各司其职 |
 | 契约约束 | 无（边写边改） | 必须先定 PRD/API/Schema |
 | QA 验证 | 写完了说"应该 OK"| 任务级 QA Agent 独立验证 |
 | 打回机制 | 没有 | 4 类规则 + 重试上限 |
