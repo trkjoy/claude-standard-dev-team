@@ -125,7 +125,8 @@ Claude Code **不支持 subagent 嵌套派发**——被 `Task` 工具启动的 
 | Agent | 职责 |
 |-------|------|
 | `database-optimizer` | Schema 定义、数据库迁移、索引优化 |
-| `backend-architect` | API 实现、业务逻辑、框架改造、后端重构 |
+| `backend-architect` | API 实现、业务逻辑、框架改造、后端重构（Node/TS 等非 go-zero 栈） |
+| `go-zero-engineer` | go-zero Go 后端：API_CONTRACT 翻译为 .api、goctl 生成骨架、logic 实现（单体 HTTP 服务） |
 | `ui-designer` | 设计规范、颜色/字体/间距/组件视觉体系 |
 | `frontend-developer` | UI 页面、组件实现、前端接口调用 |
 | `devops-automator` | Docker、CI/CD、部署配置、环境问题 |
@@ -148,7 +149,7 @@ Claude Code **不支持 subagent 嵌套派发**——被 `Task` 工具启动的 
 
 | 任务类型 | 主力 Agent | 可选配合 |
 |---------|-----------|---------|
-| 后端接口 / 业务逻辑 / 框架改造 / 重构 | `backend-architect` | `code-reviewer`, `testing-evidence-collector` |
+| 后端接口 / 业务逻辑 / 框架改造 / 重构 | TECH_SPEC 后端框架=`go-zero` → `go-zero-engineer`；否则 `backend-architect` | `code-reviewer`, `testing-evidence-collector` |
 | 前端页面 / 组件 / UI 实现 | `frontend-developer` | `ui-designer`, `testing-evidence-collector` |
 | 数据库 Schema / 迁移 / 查询优化 | `database-optimizer` | `backend-architect` |
 | 部署 / Docker / CI/CD / 环境 | `devops-automator` | `testing-evidence-collector` |
@@ -441,6 +442,11 @@ project-tasks/
 读取 `~/.claude/team-memory/patterns/backend-patterns.md` 和 `contract-patterns.md`，筛选技术栈匹配的条目（最多 15 条），生成 `PHASE5_MEMORY_HINT`，作为 Phase 5 每个 backend-architect 调用的前置提示。
 
 ### Phase 5：后端实现（Dev-QA Loop）
+
+> **后端 agent 路由（进入本 Phase 前先判定）**：读取 `docs/TECH_SPEC.md` 技术栈选型表「后端框架」行。
+> 受控标识以 `go-zero` 开头 → 本 Phase 所有 STEP 1 的实现 agent 用 **`go-zero-engineer`**（输入额外含 DB_SCHEMA 的建表 DDL，供 goctl model 使用）；
+> 否则用 **`backend-architect`**（现状不变）。失败分流（字段/契约→software-architect、连接→devops-automator、鉴权→security-engineer）对两者一致。
+> 下文 STEP 1 中的 `backend-architect` 按此路由结果替换；其余 STEP 不变。
 
 > **可选 Workflow 下沉**：若后端接口数 ≥5 且用户已在 Step 1.6 确认启用，可将 Dev-QA Loop 下沉为并行 workflow（orchestrator 提示 → 用户确认 → 跑 workflow → 结果回 orchestrator 验收），复用 `backend-architect` + `testing-evidence-collector`。未启用时保持下方串行流程不变。
 >
