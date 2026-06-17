@@ -149,7 +149,7 @@ Claude Code **不支持 subagent 嵌套派发**——被 `Task` 工具启动的 
 
 | 任务类型 | 主力 Agent | 可选配合 |
 |---------|-----------|---------|
-| 后端接口 / 业务逻辑 / 框架改造 / 重构 | TECH_SPEC 后端框架=`go-zero` → `go-zero-engineer`；否则 `backend-architect` | `code-reviewer`, `testing-evidence-collector` |
+| 后端接口 / 业务逻辑 / 框架改造 / 重构 | TECH_SPEC 后端框架以 `go-zero` 开头 → `go-zero-engineer`；否则 `backend-architect` | `code-reviewer`, `testing-evidence-collector` |
 | 前端页面 / 组件 / UI 实现 | `frontend-developer` | `ui-designer`, `testing-evidence-collector` |
 | 数据库 Schema / 迁移 / 查询优化 | `database-optimizer` | `backend-architect` |
 | 部署 / Docker / CI/CD / 环境 | `devops-automator` | `testing-evidence-collector` |
@@ -433,7 +433,7 @@ project-tasks/
 **调用 `database-optimizer`**
 ```
 输入：docs/DB_SCHEMA.md、docs/TECH_SPEC.md
-产出：migrations/ 目录、model 文件、迁移运行器脚本
+产出：若 TECH_SPEC 后端框架以 `go-zero` 开头 → 只产出 migrations/*.sql 与迁移运行器脚本，不产出 model 文件（model 层由 go-zero-engineer 用 goctl model 生成）；否则按原样产出 migrations/ 目录、model 文件、迁移运行器脚本
 若发现 Schema 问题 → 写入 docs/DB_ISSUES.md → 打回 software-architect 修正
 ```
 
