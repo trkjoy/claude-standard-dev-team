@@ -6,6 +6,24 @@
 
 ---
 
+## [1.5.0] - 2026-06-17
+
+> 新增 go-zero Go 后端工程师角色，与现有 Node/TS 后端并存，由 orchestrator 按技术栈自动二选一路由。整条链路（架构师声明技术栈 → 路由 → 翻译契约 → goctl 生成 → 编译通过）已端到端实跑验证。
+
+### 新增（Added）
+
+- **`go-zero-engineer` 角色**：单体 goctl api HTTP 服务工程师。读技术栈中立的 `API_CONTRACT.md` 翻译成 go-zero 原生 `.api` 契约，用 `goctl api go` / `goctl model mysql` 生成骨架与 model 层，只在 logic 填业务逻辑。内嵌官方规范（`.api` 语法、目录结构、`httpx`/`errorx` 统一错误处理、5 项生产规范），附官方 `ai-context` 链接兜底。翻译环节用「.api 逐字对照 API_CONTRACT 一致性自查 + `GOZERO_STATUS.md` 翻译差异登记 + code-reviewer Phase 8 把关」三重兜底。
+
+### 改进（Changed）
+
+- **`orchestrator` 按技术栈路由后端 agent**：Phase 5 读 `TECH_SPEC.md`「后端框架」字段，以 `go-zero` **开头**则派 `go-zero-engineer`（额外传入 DB_SCHEMA 建表 DDL 供 goctl model），否则派 `backend-architect`（Node/TS 链路行为零变化）。失败分流规则对两者一致。
+- **`orchestrator` Phase 4 边界收口**：go-zero 栈下 `database-optimizer` 只产出 migrations DDL、不产 model 文件（model 层由 go-zero-engineer 用 goctl 生成），消除孤儿产物。
+- **`software-architect` 强制声明后端技术栈**：`TECH_SPEC.md` 技术栈选型表「后端框架」行须用受控标识开头（如 `go-zero（Go 1.24）` / `Node-Express` / `Node-Koa` / `FastAPI`），供 Phase 5 路由判定。
+
+> 来源：经 brainstorming → spec → plan → subagent 逐任务实现+评审 → 终评修复 → 端到端验证全流程产出。验证用真实最小契约跑通 goctl 生成且 `go build ./...` / `go vet ./...` 均通过。设计与计划见 `docs/superpowers/{specs,plans}/2026-06-17-go-zero-engineer*`。install 脚本以 `agents/*.md` 通配复制，新角色自动分发，无需改清单。
+
+---
+
 ## [1.4.2] - 2026-06-11
 
 > 修复实跑 audit-scan workflow 时它"扫出自己"的两个问题，并给前端 token 存储补安全警示。
