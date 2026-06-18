@@ -19,6 +19,7 @@
 - **`orchestrator` 按技术栈路由后端 agent**：Phase 5 读 `TECH_SPEC.md`「后端框架」字段，以 `go-zero` **开头**则派 `go-zero-engineer`（额外传入 DB_SCHEMA 建表 DDL 供 goctl model），否则派 `backend-architect`（Node/TS 链路行为零变化）。失败分流规则对两者一致。
 - **`orchestrator` Phase 4 边界收口**：go-zero 栈下 `database-optimizer` 只产出 migrations DDL、不产 model 文件（model 层由 go-zero-engineer 用 goctl 生成），消除孤儿产物。
 - **`software-architect` 强制声明后端技术栈**：`TECH_SPEC.md` 技术栈选型表「后端框架」行须用受控标识开头（如 `go-zero（Go 1.24）` / `Node-Express` / `Node-Koa` / `FastAPI`），供 Phase 5 路由判定。
+- **文档团队数量同步**：`README.md`（成员表新增 go-zero-engineer + 4 处计数）与 `orchestrator.md`（description 等 3 处「下游 agent」数量）由 14 名成员更新为 15 名。
 
 > 来源：经 brainstorming → spec → plan → subagent 逐任务实现+评审 → 终评修复 → 端到端验证全流程产出。验证用真实最小契约跑通 goctl 生成且 `go build ./...` / `go vet ./...` 均通过。设计与计划见 `docs/superpowers/{specs,plans}/2026-06-17-go-zero-engineer*`。install 脚本以 `agents/*.md` 通配复制，新角色自动分发，无需改清单。
 
