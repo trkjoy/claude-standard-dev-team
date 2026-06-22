@@ -6,6 +6,20 @@
 
 ---
 
+## [1.5.1] - 2026-06-22
+
+> 修复 `/team-init` 在 Windows 上生成的 `settings.json` 仍是 Bash 白名单、导致 PowerShell 命令逐条弹确认的问题，改为按操作系统分别生成对应白名单。
+
+### 修复（Fixed）
+
+- **[MEDIUM] team-init 生成的 settings.json 不分平台**：原 Step 5 无条件写入 `Bash(...)` 前缀白名单。Windows 下 Claude Code 的 shell 实际走 PowerShell，`Bash(...)` 等于没放行——每条 `npm`/`git`/`node` 命令仍弹权限确认。改为先判定操作系统（优先看会话环境 `Platform` 字段，拿不准时 `$PSVersionTable.OS` / `uname -s` 探测一次），再二选一写入：Windows 走 `PowerShell(...)` 白名单（含 `New-Item`/`Get-ChildItem`/`Get-Content`/`Write-Output` 等 PowerShell 原生命令替代 `mkdir`/`ls`/`cat`/`echo`），macOS/Linux/WSL 走原 `Bash(...)` 白名单。两平台均保持「按命令前缀放行、不整体放行 shell、不可逆/对外动作不入白名单」的安全边界不变。
+
+### 改进（Changed）
+
+- **team-init 对已存在 settings.json 做平台迁移**：原 Step 5 对已存在文件直接跳过，导致老项目（v1.5.0 及更早在 Windows 上误写 Bash 白名单）即便重跑 `/team-init` 也修不掉。新增 Step 5-C：读现有 `allow`，若 shell 前缀与本平台不符（Windows 见 `Bash(...)` / Unix 见 `PowerShell(...)`）则迁移——保留 `Read`/`Task` 及用户自定义条目，仅把旧平台 shell 条目按对照表换成本平台前缀，写回并报告。老项目落地此修复：在该项目内重跑一次 `/team-init`（常规 update 脚本不改项目级 settings.json）。
+
+---
+
 ## [1.5.0] - 2026-06-17
 
 > 新增 go-zero Go 后端工程师角色，与现有 Node/TS 后端并存，由 orchestrator 按技术栈自动二选一路由。整条链路（架构师声明技术栈 → 路由 → 翻译契约 → goctl 生成 → 编译通过）已端到端实跑验证。

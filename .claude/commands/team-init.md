@@ -88,9 +88,58 @@ description: 在当前目录初始化标准团队项目（交互式收集配置�
 
 ---
 
-### Step 5 — 生成 .claude/settings.json
+### Step 5 — 生成 .claude/settings.json（**按操作系统区分**）
 
-若 `.claude/settings.json` 不存在，用 Write 工具生成（**按命令前缀白名单，不要整体放行 `Bash`**——不可逆/对外动作如 `git push`、`rm`、`docker`、`sudo` 故意不在白名单，由 orchestrator 的安全确认点逐次把关）：
+先判定当前操作系统，再按下面分支处理：
+
+- **文件不存在** → 用 Write 工具按平台生成（Windows 走 5-A，macOS/Linux/WSL 走 5-B）。
+- **文件已存在** → 不要直接跳过，先读它做一次「平台匹配检查」（见 5-C 迁移）。这能修复老版本（v1.5.0 及更早）在 Windows 上误写 `Bash(...)` 白名单、导致每条命令仍弹确认的历史项目。
+
+**关键：先判定当前操作系统，再选对应的白名单写入**——Windows 环境里 Claude Code 的 shell 实际走 PowerShell，放行 `Bash(...)` 等于没放行（每条命令仍会弹确认），必须放行 `PowerShell(...)`；macOS/Linux/WSL 反之。
+
+判定方式（任选其一即可，不要反复试错）：
+- 优先看本会话环境信息里的 `Platform`/OS 字段：`win32` → Windows；`darwin`/`linux` → Unix。
+- 拿不准时用一条命令探测：PowerShell `$PSVersionTable.OS`（或 `$env:OS`）有输出即 Windows；否则 Bash `uname -s` 返回 `Darwin`/`Linux` 即 Unix。
+
+通用原则（两个平台都遵守）：**按命令前缀白名单，不要整体放行 `Bash` 或 `PowerShell`**——不可逆/对外动作如 `git push`、`rm`/`Remove-Item`、`docker`、`sudo` 故意不在白名单，由 orchestrator 的安全确认点逐次把关。
+
+#### 5-A　Windows（Platform = win32）→ 写入 PowerShell 白名单
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Task",
+      "Write",
+      "PowerShell(npm *)",
+      "PowerShell(npx *)",
+      "PowerShell(pnpm *)",
+      "PowerShell(yarn *)",
+      "PowerShell(node *)",
+      "PowerShell(python *)",
+      "PowerShell(python3 *)",
+      "PowerShell(pip *)",
+      "PowerShell(pytest*)",
+      "PowerShell(go *)",
+      "PowerShell(cargo *)",
+      "PowerShell(git status*)",
+      "PowerShell(git diff*)",
+      "PowerShell(git log*)",
+      "PowerShell(git add*)",
+      "PowerShell(git restore*)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(Write-Output *)"
+    ]
+  }
+}
+```
+
+#### 5-B　macOS / Linux / WSL（Platform = darwin/linux）→ 写入 Bash 白名单
 
 ```json
 {
@@ -125,6 +174,21 @@ description: 在当前目录初始化标准团队项目（交互式收集配置�
   }
 }
 ```
+
+#### 5-C　文件已存在 → 平台匹配检查与迁移（修复历史项目）
+
+用 Read 读取现有 `.claude/settings.json`，看 `permissions.allow` 里的 **shell 前缀条目**：
+
+- **Windows** 上若发现任何 `Bash(...)` 条目（老版本遗留）→ **平台不符，需迁移**。
+- **macOS/Linux/WSL** 上若发现任何 `PowerShell(...)` 条目 → 同理需迁移。
+- 若现有 shell 条目已是本平台正确前缀（Windows=PowerShell / Unix=Bash）→ **已正确，跳过，不改动**。
+
+需迁移时：
+1. 先用一句话告知用户：「检测到 `.claude/settings.json` 是为另一平台生成的（如 Windows 上却是 Bash 白名单），会导致命令逐条弹确认，建议迁移到 {本平台} 白名单。」
+2. **保留用户自定义条目**：把现有 `allow` 中**不属于** `Bash(...)`/`PowerShell(...)` 的条目（如 `Read`/`Glob`/`Task`/用户后加的自定义项）原样留下；仅把旧平台的 shell 前缀条目**替换**为本平台对应白名单（即 5-A 或 5-B 的 shell 部分）。能一一对应的命令直接换前缀（如 `Bash(npm *)`→`PowerShell(npm *)`）；`mkdir`/`ls`/`cat`/`echo` ↔ `New-Item`/`Get-ChildItem`/`Get-Content`/`Write-Output` 按 5-A/5-B 对照转换。
+3. 用 Write 写回合并后的结果，并简短报告改了哪些条目。
+
+> 边界：本检查只在 `/team-init` 运行时触发；常规 `update` 脚本不会改项目级 settings.json（它只分发全局 agent/命令）。所以老项目落地此修复，需在该项目内重跑一次 `/team-init`。
 
 ---
 
