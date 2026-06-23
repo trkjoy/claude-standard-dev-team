@@ -336,6 +336,7 @@ FOR 每个任务：
     纯部署 / 运维任务 → 调用 testing-evidence-collector 验证部署结果（健康检查 + 路径前缀），orchestrator 核对部署路径检查清单
     纯文档 / 纯配置 / 纯设计规范 → 由 orchestrator 对照验收标准检查
     输出：PASS 或 FAIL + 原因
+    （验证类型判定依据见后文「验证器分层总则（确定性优先）」节）
 
   STEP D - 决策（每次决策后立即写回 STATE.md：Current Task / Last Result / Retry Count）：
     PASS → 标记完成，进入下一任务（或等待并行批次全部完成）
@@ -767,6 +768,7 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 3. `Last Result` 为 `WAITING_USER_CONFIRMATION` → 展示 `DECISIONS.md` 摘要，等待"继续"
 4. `Retry Count >= 3`，或 `Batch Retry Counts` 中**任一任务** >= 3 → 展示 `RETRY_LOG.md` 卡点报告，不自动继续（并行批次只就超限的那几个任务卡点，其余 PASS 任务照常推进）
 5. 状态字段缺失 → 读取 docs/ 和 project-tasks/ 推断阶段，向用户确认
+6. **`Last Result=RUNNING` 且 `(当前时间 - Heartbeat At) > 30 分钟`** → 判定任务挂起 / 卡死，展示卡点报告（当前 Phase、Last Agent、Heartbeat At 时间、已过时长），**不自动续跑**，等待用户决策后再继续
 
 ## 状态写入格式
 
@@ -780,6 +782,7 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 - Batch Retry Counts: 并行批次各任务独立计数，形如 `TASK-B01:2, TASK-B03:1`（无并行批次时填 None）
 - Next Action: 下一步动作描述
 - Updated At: 当前日期
+- Heartbeat At: 最近一次 Phase 边界的心跳时间戳
 ```
 
 > **并行批次的计数表达**：1.3.1 规定并行失败任务各自维护独立重试计数，单个 `Retry Count` 标量表达不了。因此并行批次进行中**必须**用 `Batch Retry Counts` 行逐任务记录（如 `TASK-B01:2, TASK-B03:1`），`Current Task` 填整批标识或 `BATCH`；串行单任务仍用 `Retry Count`。恢复时以 `Batch Retry Counts` 为准判断哪些任务已超限。
@@ -792,6 +795,7 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 > - **任务由 FAIL 经重试转 PASS 时**：把「失败原因 + 最终解法 + 涉及文件」追加一条到 `LEARNINGS.md`（一行一条即可）。这是 Phase 11.5 `kb-curator` 知识写回的**唯一来源之一**——不写则该来源恒为空，知识沉淀只剩 `RETRY_LOG`。
 > - **每个人工确认点暂停时**：`Last Result=WAITING_USER_CONFIRMATION`，并把待确认要点写入 `DECISIONS.md`。
 > - **卡点暂停时**：`Last Result=BLOCKED` + 写 `RETRY_LOG.md`。
+> - **每个 Phase 边界**：更新 `Heartbeat At` 为当前时间戳（格式：`YYYY-MM-DD HH:MM`），供断点恢复时检测挂起。
 > 仅长链路任务（完整项目 / 大规模迁移 / 多轮 Audit-Fix）强制；单任务 / Hotfix / 纯文档不要求。
 
 ---
@@ -821,6 +825,31 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 
 ---
 
+# 验证器分层总则（确定性优先）
+
+> 本节是贯穿全流程的显式总则。调研报告核心论断"verifier is the bottleneck"已被多票核实——验证器是循环的承重墙与瓶颈，**确定性验证必须优先于 LLM 判断**，不能让 LLM 声称"我觉得没问题"替代机器跑出来的确定性结论。
+
+## 验证手段分级表
+
+| 环节 | 验证类型 | gate 性质 |
+|---|---|---|
+| 编译 / 类型检查 / lint | 确定性（工具输出） | **强制硬 gate**（不绿不准声明完成） |
+| 单元 / 集成 / E2E 测试（RED → GREEN） | 确定性（测试输出） | **强制硬 gate** |
+| 契约 diff（路径/字段名/错误码 vs API_CONTRACT） | 确定性（可脚本化 diff） | **强制硬 gate**（建议补 contract-diff 脚本，把肉眼比对升级为机器比对） |
+| 部署路径前缀检查（Phase 9 四项） | 确定性 | **强制硬 gate**（已有） |
+| UI 视觉 / 交互体验 / 需求符合度 | 取证型 LLM（testing-evidence-collector 截图） | 保留 LLM 验证，但**必须附确定性证据**（接口响应/测试输出），无证据倾向 FAIL |
+| 代码可维护性 / 风格 | LLM（code-reviewer） | 保留 LLM 验证 |
+
+## 核心总则
+
+**任一强制硬 gate 未绿，流程不允许进入下一 Phase，即使 LLM 声称完成。**
+
+- 硬 gate 的判定依赖真实命令输出，不接受 agent 主观叙述。
+- 取证型 LLM 验证（截图/视觉）不能替代硬 gate；两者并存时，硬 gate 优先，硬 gate 绿后才看 LLM 取证结果。
+- 若当前环境无法运行某确定性工具（如 CI 未配置、依赖未安装），必须**明确标注为阻塞卡点**，不可绕过。
+
+---
+
 # 重试总规则
 
 | 触发条件 | 打回目标 | 最大重试 |
@@ -838,6 +867,45 @@ STEP 3 - 调用 testing-evidence-collector 验证：
 | Audit-Fix 重跑仍有 Blocker | 对应实现 agent（Dev-QA Loop） | 2轮 |
 | DB_ISSUES.md 存在 | software-architect | 2次 |
 | 任何重试超限 | 暂停 → 向用户报告卡点 | — |
+
+---
+
+## 循环预算治理
+
+> 本节仅对**自动循环（cron / hook / 无人值守 workflow）**强制生效；**人主导的串行流程沿用上方「重试总规则」的轮次上限即可**，无需额外预算管控。
+
+调研头号风险是 token / 时间失控（loopmaxxing）。当前有轮次上限，但无时间预算的强制熔断。以下三维预算在自动循环中**全部适用**：
+
+| 预算维度 | 默认上限（自动循环） | 触发动作 |
+|---|---|---|
+| 轮次（per task） | 沿用重试总规则（3 / 2 / 1） | 超限转人工卡点（已有） |
+| Token（per 循环会话） | 自动循环**必填**，无默认；人主导默认不限 | 超 80% 预警写 STATE.md；超 100% 硬熔断停循环 |
+| 时间（per 循环会话） | 自动循环默认 **60 分钟** | 超时熔断 + 写卡点报告到 RETRY_LOG.md |
+| 无进展检测 | 连续 2 轮"同一错误 / 无 diff 进展" | 判 loopmaxxing，提前熔断（不等耗满预算） |
+
+**退出 / 熔断条件（显式）**：
+- 所有强制硬 gate 全绿 → **正常退出**
+- 任一预算维度耗尽，或无进展检测连续 2 轮命中 → **熔断退出**，写 `RETRY_LOG.md` 卡点报告
+
+> ⚠️ 诚实标注：token 实时计量依赖运行环境是否暴露用量——这是**待验证假设**。若拿不到精确 token 用量，用「轮次 + 时间 + 无进展检测」三维组合兜底（这三者确定可得）。
+
+---
+
+## 自动 / 定时循环约定
+
+本节声明**自动循环（cron / hook / 无人值守 workflow）**的红线，防止无人值守场景中触发不可逆操作或绕过安全确认点。
+
+**自动循环的三条红线**：
+
+1. **只读不改**：自动循环只允许读取状态文件、生成报告，**绝不修改业务代码、数据库、配置文件**。如需修改，必须转为人工确认后的手动流程。
+2. **禁止触发任何安全确认点动作**：以下动作在自动循环中**一律禁止**，无论用户是否曾经授权过：
+   - 实际部署 / 热部署 / 重启线上服务
+   - 删除文件 / 目录 / 数据库表 / 数据
+   - `git push` / `git reset --hard` 等改写历史的 git 操作
+   - 向外部网络发送数据、推送镜像、对接生产环境凭据
+3. **产物只写入约定的报告文件**：自动循环的所有输出只允许写入约定的报告文件（如 `docs/NIGHTLY_AUDIT.md`、`.claude/team-state/RETRY_LOG.md`），不得写入 `docs/` 下的契约文件或 `src/` 等业务目录。
+
+**每次自动循环必须先写 `LOOP_CONTEXT.md`**，记录本次触发来源与边界（见 `templates/memory/team-state/LOOP_CONTEXT.md` 模板）。
 
 ---
 

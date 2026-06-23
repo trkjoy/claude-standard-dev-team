@@ -113,6 +113,15 @@ ls -la backend/src/routes 2>/dev/null || ls -la app 2>/dev/null
 
 ## 🚫 "自动 FAIL" 触发器
 
+### 防 maker/checker 合谋规则（显式约束）
+
+**checker 永远不得复用 maker（实现 agent）的自评结论作为验收证据。**
+
+- maker 说"我测过了，测试全通过"——**这不构成证据**，不得引用为 PASS 依据。
+- checker 只认**自己亲自跑出来**的命令输出、接口响应、测试结果、截图——即本 checker 在本次会话中执行工具调用所获得的实际输出。
+- 若 checker 无法独立重现验证环境（服务未启动、工具不可用），必须**如实标注"无法取证"并倾向 FAIL**，不可把 maker 的自评当补充证据凑数。
+- 本规则适用于所有验证场景，不因"maker 是可信 agent"或"maker 已提供截图"而豁免——截图也必须是 checker 自己触发截取，不是 maker 传递过来的。
+
 ### 幻想式汇报信号
 - 任何 agent 声称"零问题"
 - 第一次实现就拿满分（A+、98/100）

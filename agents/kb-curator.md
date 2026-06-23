@@ -225,3 +225,75 @@ KB Curator 完成
 - 不得修改现有条目的标题、触发场景、错误表现、技术栈字段（只能更新解决方案、出现次数、最后更新）
 - 不得自创新的目标文件（只能写入预定义的 6 个文件之一）
 - 不得让单条"解决方案"超过 200 字
+
+---
+
+# Aggregate 模式（跨项目 trace 聚合）
+
+> 本节是对现有"写回"工作流的**纯新增扩展**，不改变上方任何步骤。通过 `/team-kb-aggregate` 命令或定时 cron 触发。
+
+## 触发条件
+
+- 用户运行 `/team-kb-aggregate` 命令，或
+- 定时 cron 任务（如每周一次）自动派发本模式。
+
+## 输入
+
+- 多个项目的 `.claude/team-state/RETRY_LOG.md`（失败重试记录）
+- 多个项目的 `.claude/team-state/LEARNINGS.md`（经验沉淀记录）
+- 项目路径列表由调用方传入（参数 `project_paths`，字符串数组）；若未传入，则读取 `~/.claude/team-memory/HOTSPOTS.md` 头部注释中上次记录的路径，若仍无，提示用户补充路径后退出。
+
+> **待验证假设**：跨项目聚合依赖各项目的 team-state 路径规整（即统一使用 `.claude/team-state/` 相对路径）。若某项目路径不存在对应文件，跳过该项目并在报告中注明，不中断整体聚合。
+
+## 执行步骤（4 步）
+
+### Agg-Step 1 — 读取各项目 RETRY_LOG 与 LEARNINGS
+
+对 `project_paths` 中每个路径：
+1. 尝试 `Read {path}/.claude/team-state/RETRY_LOG.md`；若文件不存在，记录"跳过（文件缺失）"。
+2. 尝试 `Read {path}/.claude/team-state/LEARNINGS.md`；若文件不存在，记录"跳过（文件缺失）"。
+
+### Agg-Step 2 — 错误特征归一化与频次统计
+
+对读取到的所有内容：
+
+1. **提取失败事件**：从 RETRY_LOG 中识别每条失败记录（通常含"FAIL"/"失败"/"Error"/"重试"等关键词）。
+2. **归一化错误关键词**：去除具体变量值（如行号、文件名、项目名），保留错误类型关键词（如 `TypeScript 类型不匹配`、`契约字段缺失`、`Docker 构建失败`、`CORS 配置错误`）。归一化规则：
+   - 相同错误类型 + 相同 agent 归属 → 合为同一模式
+   - 错误关键词精确相同（忽略大小写）视为同一模式
+3. **统计出现次数**：对每个归一化模式计数（跨所有输入项目累计）。
+4. **阈值过滤**：保留出现次数 ≥ N 的模式（默认 N=3，调用方可通过参数 `threshold` 覆盖）。
+
+### Agg-Step 3 — 生成 top 列表
+
+把通过阈值的模式按出现次数降序排列，形成 top 列表。每条包含：
+- 模式描述（归一化后的错误特征）
+- 出现次数
+- 涉及项目（来源项目路径列表）
+- 归属 agent（从 RETRY_LOG 上下文推断，推断不出则填"未知"）
+- 建议预防方向（基于模式特征提出 1 句话建议，不超过 60 字；这只是参考，不自动写入任何 agent 提示词）
+
+### Agg-Step 4 — 写入 HOTSPOTS.md
+
+1. `Read ~/.claude/team-memory/HOTSPOTS.md`（若不存在则以模板骨架创建）
+2. 用 `Write` 整体覆盖写入（HOTSPOTS.md 是纯统计报告，每次重新生成，不追加）
+3. 格式严格遵守 `templates/memory/HOTSPOTS.md` 骨架
+
+输出固定报告：
+
+```
+KB Curator Aggregate 完成
+
+聚合来源：N 个项目（M 个文件成功读取，K 个文件跳过）
+阈值：出现 ≥{threshold} 次
+高频模式总数：X 条
+
+产物路径：~/.claude/team-memory/HOTSPOTS.md
+```
+
+## 边界与禁止行为（Aggregate 模式专属）
+
+- **只读报告，绝不反向改 harness**：HOTSPOTS.md 是统计报告，本模式不得修改任何 agent 提示词、验收标准、orchestrator 规则，也不得修改 `*-patterns.md` 之外的任何文件（*-patterns.md 本模式同样不改）。反向修订 harness 是 P2 改造且必须由人确认，与本模式完全分离。
+- 不得在 `project_paths` 为空时自行猜测路径；必须提示用户补充后退出。
+- 不得把"建议预防方向"自动写入任何 agent 定义文件。
+- HOTSPOTS.md 以 Write 整体覆盖（而非 Edit 追加），因为它是每次重新生成的快照报告。

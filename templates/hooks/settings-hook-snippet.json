@@ -1,0 +1,48 @@
+{
+  "_comment_snippet": [
+    "本文件是可合并进项目 .claude/settings.json 的 hook 注册片段示例。",
+    "这是片段，不是完整的 settings.json；需用户手动把 hooks 数组合并入项目的 .claude/settings.json。",
+    "不要直接把此文件当作 settings.json 使用。",
+    "",
+    "待验证假设：CI→回灌 Claude 的端到端触发链（即 CI 失败后自动调用本 hook",
+    "进而在下次 Claude 会话中展示 CI_FAILURE.md）属待验证假设。",
+    "当前版本只落地「写文件」这一步；CI 如何调用 hook、如何触发下次会话感知，",
+    "需项目方根据自身 CI 系统（GitHub Actions / Jenkins / GitLab CI 等）自行配置。",
+    "",
+    "Hook 类型说明（Claude Code settings.json hooks 规范）：",
+    "  - PostToolUse：某个工具调用完成后触发",
+    "  - 更多类型见 Claude Code 官方文档"
+  ],
+
+  "hooks": [
+    {
+      "_comment": "示例：在 Bash 工具执行后，若输出含 CI 失败关键词，收集失败摘要。",
+      "_comment_note": "此为示意性片段，实际触发条件和脚本路径需根据项目调整。",
+      "event": "PostToolUse",
+      "matcher": {
+        "tool_name": "Bash"
+      },
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash .claude/hooks/collect-ci-failure.sh --file /tmp/ci_last_output.log --ts \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"",
+          "_comment": [
+            "注意：此命令假设 CI 系统已把失败日志写入 /tmp/ci_last_output.log。",
+            "实际使用时需根据 CI 系统的日志路径调整 --file 参数。",
+            "Windows 环境请改用 collect-ci-failure.ps1。",
+            "待验证假设：hook 触发时机与 CI 失败日志可用时机的对齐需实测。"
+          ]
+        }
+      ]
+    }
+  ],
+
+  "_usage_instructions": [
+    "使用步骤：",
+    "1. 打开项目 .claude/settings.json（若不存在则新建）",
+    "2. 把上方 hooks 数组的内容合并进 settings.json 的 hooks 字段",
+    "3. 根据项目实际 CI 日志路径调整 --file 参数",
+    "4. Windows 环境把 bash 命令替换为 PowerShell 调用 collect-ci-failure.ps1",
+    "5. 验证：手动触发一次 CI 失败，确认 .claude/team-state/CI_FAILURE.md 被正确写入"
+  ]
+}

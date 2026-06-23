@@ -201,3 +201,4 @@ orchestrator 会自动接管：扫描需求 → 调 product-manager 写 PRD → 
 
 - [Claude Code 官方](https://claude.com/claude-code)
 - [Claude Code agent 文档](https://docs.claude.com/en/docs/claude-code/sub-agents)
+- [团队 Loop Engineering 现状基线与改造蓝图](docs/LOOP_ENGINEERING.md)

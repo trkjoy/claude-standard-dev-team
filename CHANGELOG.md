@@ -6,6 +6,32 @@
 
 ---
 
+## [1.6.0] - 2026-06-23
+
+> 引入 **Loop Engineering（循环工程）** 改造：先对该 2026 年新范式做了多源调研，确认当前团队本身已是一套成熟的早期 Loop Engineering 实践（goal 循环 / maker-checker 分离 / 契约驱动 / 外部状态持久化 / 知识写回），再补齐其缺口——非人触发的循环类型、确定性验证总则、自动循环成本闸、trace 聚合。本版落地 P0（制度约定）+ P1（可跑的自动化产物），全部加法式、默认不激活，对现有串行流程零行为破坏。
+
+### 新增（Added）
+
+- **验证器分层总则（确定性优先）**：`orchestrator.md` 新增该节 + 「环节 × 验证类型 × gate 性质」优先级表，Step 3 STEP C 引用。明确编译/类型/lint/测试/契约 diff/部署路径为强制硬 gate——任一未绿不许进下一 Phase，即使 LLM 声称完成。
+- **循环预算治理**：`orchestrator.md` 新增该节，把"重试上限"扩成三维预算（轮次/token/时间）+ 无进展熔断，仅对自动循环强制；`GOAL.md` 新增 `时间预算`、`无进展熔断` 字段。
+- **自动 / 定时循环约定**：`orchestrator.md` 新增该节 + 新建 `templates/memory/team-state/LOOP_CONTEXT.md` 模板，立下"自动循环只读不改、禁触任何安全确认点动作、产物只写报告"红线。
+- **Heartbeat 心跳/挂起检测**：`STATE.md` + `orchestrator.md` 新增 `Heartbeat At` 字段、每 Phase 边界更新、恢复时超 30 分钟无心跳判挂起不自动续跑。
+- **夜间 Audit 自动循环**：`templates/workflows/nightly-audit.workflow.js`——无人值守只读跑 code-reviewer + security-engineer，内置三维成本闸与无进展熔断，随 install 自动分发。
+- **contract-diff 契约硬 gate**：`templates/workflows/contract-diff.{sh,ps1}`——把契约一致性从 LLM 肉眼比对升级为机器 diff（最大努力版，项目级脚本由 team-init 铺设）。
+- **CI 失败收集 hook**：`templates/hooks/collect-ci-failure.{sh,ps1}` + `settings-hook-snippet.json`。
+- **trace 聚合（L1 自我改进）**：`kb-curator.md` 新增 `aggregate` 模式 + 新命令 `/team-kb-aggregate` + `templates/memory/HOTSPOTS.md`；统计跨项目高频失败模式产出只读报告，绝不自动改 harness。
+- **状态模板**：`templates/memory/team-state/BUDGET_BURN.md`（预算消耗记录）。
+- **文档**：`docs/LOOP_ENGINEERING.md`（调研+蓝图合订本）、`LOOP_ENGINEERING_RESEARCH.md`、`LOOP_ENGINEERING_BLUEPRINT.md`、`LOOP_ENGINEERING_P1.md`（使用说明）；README 新增基线链接。
+
+### 改进（Changed）
+
+- **防 maker/checker 合谋显式化**：`testing-evidence-collector.md` 明确写出——checker 永不复用 maker 自评结论作为证据，只认自己跑出来的命令/接口/测试输出。
+- **命令分发布线**：`install.sh` / `install.ps1` 命令拷贝列表加入 `team-kb-aggregate.md`（update 脚本转调 install，升级时一并刷新）。
+
+> P2（CI 失败自动修复重度层、反向改 harness 的 L2 自我改进）须在 P1 验证稳定后、经人工确认才推进。多项环境相关能力（token 实时计量、GitHub Actions/cron 无 TTY 接入、CI→回灌触发链）标注为待验证假设，详见 `docs/LOOP_ENGINEERING_P1.md`。
+
+---
+
 ## [1.5.1] - 2026-06-22
 
 > 修复 `/team-init` 在 Windows 上生成的 `settings.json` 仍是 Bash 白名单、导致 PowerShell 命令逐条弹确认的问题，改为按操作系统分别生成对应白名单。

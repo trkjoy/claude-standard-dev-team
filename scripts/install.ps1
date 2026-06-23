@@ -289,8 +289,9 @@ function Install-Claude {
     if (Test-Path $CommandsSrc) {
         New-Item -ItemType Directory -Force -Path $CommandsDest | Out-Null
         Copy-Item (Join-Path $CommandsSrc 'team-init.md')    $CommandsDest -Force
-        Copy-Item (Join-Path $CommandsSrc 'team-kb-save.md') $CommandsDest -Force
-        Copy-Item (Join-Path $CommandsSrc 'team-version.md') $CommandsDest -Force
+        Copy-Item (Join-Path $CommandsSrc 'team-kb-save.md')       $CommandsDest -Force
+        Copy-Item (Join-Path $CommandsSrc 'team-kb-aggregate.md') $CommandsDest -Force
+        Copy-Item (Join-Path $CommandsSrc 'team-version.md')      $CommandsDest -Force
         # 清理 v1.2.0 已废弃的旧命令（老用户升级时自动移除孤立文件）
         foreach ($stale in 'team-install.md','team-update.md') {
             $sp = Join-Path $CommandsDest $stale
