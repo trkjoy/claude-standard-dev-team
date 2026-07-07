@@ -14,8 +14,10 @@ description: 在当前目录初始化标准团队项目（交互式收集配置�
 
 ### Step 2 — 检查 CLAUDE.md
 
-- 若 `CLAUDE.md` **已存在**：告知用户已跳过，直接进入 Step 4
-- 若 **不存在**：继续 Step 3
+- 若 `CLAUDE.md` **不存在** → 记 CLAUDE_MODE = `create`，继续 Step 3。
+- 若 **已存在** → 用 Read 读取内容，检查是否已包含团队配置（判定标准：出现 `## 团队配置` 标题，或触发语 `使用标准团队开发`）：
+  - **已包含** → 团队配置已就绪，告知用户后跳过 Step 3/4，直接进入 Step 5。
+  - **未包含**（用户自己的 CLAUDE.md，如 /init 生成的）→ 记 CLAUDE_MODE = `append`，告知用户「检测到已有 CLAUDE.md，将把团队配置**追加**到文件末尾，原有内容不动」，继续 Step 3。
 
 ---
 
@@ -44,9 +46,12 @@ description: 在当前目录初始化标准团队项目（交互式收集配置�
 
 ---
 
-### Step 4 — 生成 CLAUDE.md
+### Step 4 — 生成 / 追加 CLAUDE.md
 
-若 CLAUDE.md 不存在，用 Write 工具生成（将 PROJECT_NAME、TECH_STACK、DEPLOY_ENV 替换为实际值）：
+按 CLAUDE_MODE 处理（将 PROJECT_NAME、TECH_STACK、DEPLOY_ENV 替换为实际值）：
+
+- `create` → 用 Write 工具生成下面完整模板。
+- `append` → **不要覆盖原文件**。用 Edit 工具在现有 CLAUDE.md **末尾追加**：一个空行 + 分隔线 `---` + 下面模板中**除首行 `# {PROJECT_NAME}` 标题以外**的全部内容（即从 `## 团队配置` 到 `## 团队运行机制` 结束）。原有内容一字不改。
 
 ```markdown
 # {PROJECT_NAME}
